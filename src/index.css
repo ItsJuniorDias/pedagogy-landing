@@ -1,0 +1,174 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #fbf7ec;
+  color: #3a3142;
+  font-family: 'Nunito', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+h4,
+.font-display {
+  font-family: 'Baloo 2', system-ui, cursive;
+}
+
+/* Chunky "press" buttons — Pedagogy / Duolingo style */
+.btn3d {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  border-radius: 16px;
+  font-family: 'Baloo 2', cursive;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  border: 0;
+  text-decoration: none;
+  transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.15s ease;
+}
+.btn3d:active {
+  transform: translateY(4px);
+}
+.btn3d:focus-visible {
+  outline: 3px solid #3a3142;
+  outline-offset: 3px;
+}
+.b-pink {
+  background: #ff4d87;
+  color: #fff;
+  box-shadow: 0 6px 0 0 #e22c68;
+}
+.b-pink:active {
+  box-shadow: 0 2px 0 0 #e22c68;
+}
+.b-grape {
+  background: #6d4be0;
+  color: #fff;
+  box-shadow: 0 6px 0 0 #5435c4;
+}
+.b-grape:active {
+  box-shadow: 0 2px 0 0 #5435c4;
+}
+.b-sun {
+  background: #ffd42e;
+  color: #5b4a12;
+  box-shadow: 0 6px 0 0 #e9b400;
+}
+.b-sun:active {
+  box-shadow: 0 2px 0 0 #e9b400;
+}
+.b-white {
+  background: #fff;
+  color: #6d4be0;
+  box-shadow: 0 6px 0 0 #e2d9f8;
+}
+.b-white:active {
+  box-shadow: 0 2px 0 0 #e2d9f8;
+}
+.b-dark {
+  background: #3a3142;
+  color: #fff;
+  box-shadow: 0 5px 0 0 #221c29;
+}
+.b-dark:active {
+  box-shadow: 0 1px 0 0 #221c29;
+}
+.btn3d:hover {
+  filter: brightness(1.04);
+}
+
+/* NOTE: floating decorations and scroll reveals are now driven by Framer Motion
+   (see src/motion.js + src/components/ui.jsx), so the old CSS keyframes and
+   .rv reveal classes were removed. Reduced-motion is handled globally via
+   <MotionConfig reducedMotion="user"> in main.jsx. */
+
+/* Story path spine */
+.spine {
+  position: relative;
+}
+.spine::before {
+  content: '';
+  position: absolute;
+  top: 18px;
+  bottom: 18px;
+  left: 31px;
+  width: 0;
+  border-left: 4px dashed rgba(109, 75, 224, 0.32);
+}
+@media (min-width: 768px) {
+  .spine::before {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
+/* Solid grape line that "draws" over the dashed track on scroll (Framer Motion
+   drives scaleY). transform-origin: top so it grows downward like a path. */
+.spine-progress {
+  position: absolute;
+  top: 18px;
+  bottom: 18px;
+  left: 31px;
+  width: 4px;
+  border-radius: 4px;
+  background: linear-gradient(#6d4be0, #16bfa6);
+  transform-origin: top center;
+  z-index: 1;
+  pointer-events: none;
+}
+@media (min-width: 768px) {
+  .spine-progress {
+    left: 50%;
+    margin-left: -2px;
+  }
+}
+
+/* Phone mockups */
+.phone {
+  border-radius: 38px;
+  background: #1f1a26;
+  padding: 9px;
+  box-shadow: 0 30px 60px -22px rgba(58, 49, 66, 0.5), 0 0 0 2px rgba(255, 255, 255, 0.6);
+}
+.phone-inner {
+  border-radius: 30px;
+  overflow: hidden;
+  background: #fff;
+  position: relative;
+}
+.phone-notch {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 42%;
+  height: 18px;
+  background: #1f1a26;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  z-index: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+::selection {
+  background: #ffd42e;
+  color: #3a3142;
+}
