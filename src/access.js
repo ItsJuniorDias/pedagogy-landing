@@ -98,15 +98,24 @@ export function weekDates(ref = new Date()) {
 const minutesMap = (reader) => reader?.progress?.activity?.minutesByDate || {}
 const activeDatesMap = (reader) => reader?.progress?.activity?.activeDates || {}
 
-/** Reading minutes per day (Mon→Sun) for the current week. */
-export function weekMinutes(reader, ref = new Date()) {
+/** Raw (unrounded) reading minutes per day (Mon→Sun) for the current week. */
+export function weekMinutesRaw(reader, ref = new Date()) {
   const m = minutesMap(reader)
-  return weekDates(ref).map((k) => Math.round(m[k] || 0))
+  return weekDates(ref).map((k) => m[k] || 0)
 }
 
-/** Total reading minutes this week. */
+/** Reading minutes per day (Mon→Sun) for the current week, rounded for display. */
+export function weekMinutes(reader, ref = new Date()) {
+  return weekMinutesRaw(reader, ref).map((v) => Math.round(v))
+}
+
+/**
+ * Total reading minutes this week. Sums the RAW per-day minutes and rounds once,
+ * so several short sessions (each under a minute) still add up instead of each
+ * rounding down to zero.
+ */
 export function minutesThisWeek(reader, ref = new Date()) {
-  return weekMinutes(reader, ref).reduce((a, b) => a + b, 0)
+  return Math.round(weekMinutesRaw(reader, ref).reduce((a, b) => a + b, 0))
 }
 
 /**

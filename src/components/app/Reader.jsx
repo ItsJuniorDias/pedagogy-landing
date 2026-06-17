@@ -588,30 +588,37 @@ export default function Reader({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chapterIdx, chId, pageIdx, pages.length])
 
-  // Track reading time while a chapter is open and the tab is visible. Flushes
-  // whole seconds periodically and on exit → feeds "minutes" + the week chart.
+  // Track reading time the whole time this story/course is open and the tab is
+  // visible — starts the moment the reader opens (list OR chapter view) so the
+  // counter is "armed" as soon as a child taps in. Flushes whole seconds every
+  // 15s and on exit, banking only the time the tab was actually visible.
+  // (Want to count only while a chapter is open? add `chapterIdx == null` back.)
   useEffect(() => {
-    if (chapterIdx == null || !contentId) return
+    if (!contentId) return
     let last = Date.now()
-    let carry = 0
-    const flush = () => {
+    let carryMs = 0
+    let visible = typeof document === 'undefined' || !document.hidden
+
+    const bankVisibleTime = () => {
       const now = Date.now()
-      if (typeof document !== 'undefined' && document.hidden) {
-        last = now
-        return
-      }
-      carry += now - last
+      if (visible) carryMs += now - last
       last = now
-      const secs = Math.floor(carry / 1000)
+    }
+
+    const flush = () => {
+      bankVisibleTime()
+      const secs = Math.floor(carryMs / 1000)
       if (secs > 0) {
-        carry -= secs * 1000
+        carryMs -= secs * 1000
         recordReading(secs)
       }
     }
+
     const onVisibility = () => {
-      if (typeof document !== 'undefined' && document.hidden) flush()
-      else last = Date.now()
+      bankVisibleTime() // count the visible stretch up to the switch…
+      visible = typeof document === 'undefined' || !document.hidden // …then flip
     }
+
     const id = setInterval(flush, 15000)
     if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisibility)
     return () => {
@@ -620,7 +627,7 @@ export default function Reader({
       if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisibility)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chapterIdx, contentId])
+  }, [contentId])
 
   // Keyboard navigation while reading.
   useEffect(() => {
