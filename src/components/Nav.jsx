@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { IMG } from '../assets.js'
 import { EASE, spring } from '../motion.js'
+
+const MotionLink = motion(Link)
 
 const LINKS = [
   ['How it works', '#how'],
@@ -57,16 +60,22 @@ export default function Nav() {
           ))}
         </div>
 
-        <div className="hidden md:block">
-          <motion.a
-            href="#download"
+        <div className="hidden md:flex items-center gap-3">
+          <Link
+            to="/login"
+            className="font-body font-bold text-[15px] text-inksoft hover:text-grape transition-colors px-2"
+          >
+            Log in
+          </Link>
+          <MotionLink
+            to="/signup"
             className="btn3d b-pink px-5 py-2.5 text-[15px]"
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.96 }}
             transition={spring.press}
           >
-            Get the app
-          </motion.a>
+            Get started
+          </MotionLink>
         </div>
 
         <button
@@ -113,9 +122,22 @@ export default function Nav() {
                   {l}
                 </motion.a>
               ))}
-              <a href="#download" onClick={() => setOpen(false)} className="btn3d b-pink w-full px-5 py-3 mt-1">
-                Get the app
-              </a>
+              <div className="mt-2 pt-2 border-t border-black/5 flex flex-col gap-2">
+                <Link
+                  to="/login"
+                  onClick={() => setOpen(false)}
+                  className="block text-center px-4 py-3 rounded-xl font-extrabold text-grape bg-lilac/60 hover:bg-lilac"
+                >
+                  Log in
+                </Link>
+                <Link
+                  to="/signup"
+                  onClick={() => setOpen(false)}
+                  className="btn3d b-pink w-full px-5 py-3"
+                >
+                  Get started
+                </Link>
+              </div>
             </div>
           </motion.div>
         )}
