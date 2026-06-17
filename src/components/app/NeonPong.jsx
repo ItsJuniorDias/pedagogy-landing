@@ -403,7 +403,7 @@ function Scene({
         limX,
       );
       ai.userData.vx = (ai.position.x - aiPrevX) / Math.max(dt, 1e-4);
-      const aiLean = clamp(dx * 0.4, -0.35, 0.35);
+      const aiLean = clamp(-dx * 0.4, -0.35, 0.35);
       ai.rotation.z += (aiLean - ai.rotation.z) * Math.min(1, dt * 10);
 
       // sidespin curves the velocity vector and decays
@@ -557,8 +557,10 @@ function Scene({
           innerRef={playerRef}
         />
       </group>
-      <group position={[0, 0, -PADDLE.z]} rotation-y={Math.PI}>
-        <Racket rubber={C3D.rubberAi} edge={C3D.ai} innerRef={aiRef} />
+      <group ref={aiRef} position={[0, 0, -PADDLE.z]}>
+        <group rotation-y={Math.PI}>
+          <Racket rubber={C3D.rubberAi} edge={C3D.ai} />
+        </group>
       </group>
 
       <Trail
