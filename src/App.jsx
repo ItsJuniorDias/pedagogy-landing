@@ -10,6 +10,7 @@ import Stories from './pages/app/Stories.jsx'
 import StoryReader from './pages/app/StoryReader.jsx'
 import Path from './pages/app/Path.jsx'
 import LessonReader from './pages/app/LessonReader.jsx'
+import Paywall from './pages/app/Paywall.jsx'
 import ComingSoon from './pages/app/ComingSoon.jsx'
 
 export default function App() {
@@ -36,6 +37,7 @@ export default function App() {
         <Route path="path" element={<Path />} />
         <Route path="path/:courseId" element={<LessonReader />} />
         <Route path="path/:courseId/:lessonId" element={<LessonReader />} />
+        <Route path="paywall" element={<Paywall />} />
         <Route
           path="games"
           element={<ComingSoon emoji="🎮" title="Games" blurb="Practice-as-play mini-games. Mocks coming soon!" />}

@@ -5,9 +5,8 @@ import { resolveCourse } from '../../data.path.js'
 
 // Thin route wrapper for the Learning Path:
 //   /app/path/:courseId            → open the lesson list
-//   /app/path/:courseId/:lessonId  → open straight to that lesson (if unlocked)
-// The `key` (courseId + lessonId) remounts the reader on navigation so state
-// resets cleanly when jumping between lessons.
+//   /app/path/:courseId/:lessonId  → open straight to that lesson (if free)
+// Premium (locked) lessons route to the paywall from inside the reader.
 export default function LessonReader() {
   const { courseId, lessonId } = useParams()
   const data = useMemo(() => resolveCourse(courseId), [courseId])
@@ -21,6 +20,7 @@ export default function LessonReader() {
   return (
     <Reader
       key={`${courseId}:${lessonId || ''}`}
+      contentId={courseId}
       card={data.course}
       chapters={data.lessons}
       status={data.status}

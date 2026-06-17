@@ -4,6 +4,8 @@ import { motion } from 'framer-motion'
 import { Reveal, Stagger, RevealItem } from '../../components/ui.jsx'
 import { fadeUp, spring } from '../../motion.js'
 import { STORIES_GRID, resolveStory } from '../../stories.index.js'
+import { useAuth } from '../../auth/AuthContext.jsx'
+import { getProgress, completedCount, hasLockedChapters, isPremiumPlan } from '../../access.js'
 
 // Badge → little corner pill styling.
 const BADGE = {
@@ -12,15 +14,37 @@ const BADGE = {
 }
 
 function StoryCard({ card }) {
-  const { status } = resolveStory(card.id)
+  const { user, activeReader } = useAuth()
+  const { status, chapters } = resolveStory(card.id)
   const ready = status === 'playable'
   const badge = card.badge ? BADGE[card.badge] : null
+
+  // Active reader's progress on this story.
+  const prog = getProgress(activeReader, 'chapter', card.id)
+  const total = chapters.length
+  const done = completedCount(chapters, prog)
+  const finished = ready && total > 0 && done === total
+  const inProgress = ready && done > 0 && !finished
+  const pct = total ? Math.round((done / total) * 100) : 0
+
+  // Has premium (locked) chapters the current plan can't open yet.
+  const hasPremium = ready && hasLockedChapters(chapters) && !isPremiumPlan(user?.plan)
+
+  const cta = !ready
+    ? 'Peek →'
+    : finished
+    ? 'Re-read →'
+    : inProgress
+    ? 'Continue →'
+    : 'Read →'
 
   return (
     <Link
       to={`/app/stories/${card.id}`}
       className="block focus:outline-none focus-visible:ring-4 focus-visible:ring-grape/30 rounded-3xl"
-      aria-label={`${card.title} — ${card.tag}, ${card.chapters} chapters, ages ${card.ageRange}${ready ? '' : ', coming soon'}`}
+      aria-label={`${card.title} — ${card.tag}, ${card.chapters} chapters, ages ${card.ageRange}${
+        ready ? (hasPremium ? ', includes premium chapters' : '') : ', coming soon'
+      }`}
     >
       <motion.article
         whileHover={{ y: -5 }}
@@ -51,12 +75,20 @@ function StoryCard({ card }) {
             </span>
           )}
 
-          {/* coming-soon marker for empty / unmapped stories */}
-          {!ready && (
+          {/* top-left marker — priority: soon › finished › premium hint */}
+          {!ready ? (
             <span className="absolute top-2.5 left-2.5 rounded-full bg-white/85 px-2.5 py-1 text-[11px] font-display font-extrabold text-inksoft shadow-sm">
               🔒 Soon
             </span>
-          )}
+          ) : finished ? (
+            <span className="absolute top-2.5 left-2.5 inline-flex items-center gap-1 rounded-full bg-mint px-2.5 py-1 text-[11px] font-display font-extrabold text-white shadow-sm">
+              ✓ Finished
+            </span>
+          ) : hasPremium ? (
+            <span className="absolute top-2.5 left-2.5 inline-flex items-center gap-1 rounded-full bg-ink/85 px-2.5 py-1 text-[11px] font-display font-extrabold text-sunny shadow-sm">
+              👑 Premium
+            </span>
+          ) : null}
         </div>
 
         {/* body */}
@@ -76,9 +108,19 @@ function StoryCard({ card }) {
           </h3>
 
           {card.peculiarity && (
-            <p className="mt-0.5 text-[12px] font-semibold text-inksoft/90">
-              ✨ {card.peculiarity}
-            </p>
+            <p className="mt-0.5 text-[12px] font-semibold text-inksoft/90">✨ {card.peculiarity}</p>
+          )}
+
+          {/* progress bar for stories the reader has started */}
+          {inProgress && (
+            <div className="mt-2.5" aria-label={`${done} of ${total} chapters read`}>
+              <div className="h-1.5 rounded-full bg-cream overflow-hidden">
+                <div className="h-full rounded-full" style={{ width: `${pct}%`, background: card.accent }} />
+              </div>
+              <p className="mt-1 text-[11px] font-bold text-inksoft">
+                {done}/{total} chapters
+              </p>
+            </div>
           )}
 
           <div className="mt-3 flex items-center justify-between">
@@ -89,7 +131,7 @@ function StoryCard({ card }) {
               className="font-display font-extrabold text-[13px] transition-transform group-hover:translate-x-0.5"
               style={{ color: card.accent }}
             >
-              {ready ? 'Read →' : 'Peek →'}
+              {cta}
             </span>
           </div>
         </div>

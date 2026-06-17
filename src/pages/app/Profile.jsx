@@ -130,6 +130,7 @@ export default function Profile() {
     addReader,
     updateReader,
     removeReader,
+    cancelPlan,
     logout,
   } = useAuth()
   const location = useLocation()
@@ -222,7 +223,7 @@ export default function Profile() {
                   </p>
                 </div>
                 {user.plan === 'Free' && (
-                  <Link to="/#pricing" className="btn3d b-sun px-6 py-3.5 text-lg">
+                  <Link to="/app/paywall" className="btn3d b-sun px-6 py-3.5 text-lg">
                     Upgrade
                   </Link>
                 )}
@@ -242,6 +243,25 @@ export default function Profile() {
                   </div>
                 ))}
               </div>
+
+              {user.plan !== 'Free' && (
+                <div className="mt-6 pt-5 border-t border-black/5 flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-[13px] font-semibold text-inksoft">
+                    {user.subscription?.cycle ? `Billed ${user.subscription.cycle}` : 'Active subscription'}
+                    {user.subscription?.since
+                      ? ` · since ${new Date(user.subscription.since).toLocaleDateString()}`
+                      : ''}
+                  </p>
+                  {/* dev helper — remove once Mercado Pago manages the subscription */}
+                  <button
+                    onClick={cancelPlan}
+                    className="btn3d b-white ring-1 ring-black/5 px-4 py-2.5 text-sm text-bubbled"
+                    title="Developer preview — reverts to Free"
+                  >
+                    Cancel subscription (dev)
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </Reveal>

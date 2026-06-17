@@ -6,6 +6,8 @@ import { Reveal, Stagger, RevealItem } from '../../components/ui.jsx'
 import { SectionHead, StatTile, WeekBars, PathTile } from '../../components/app/widgets.jsx'
 import { fadeUp, spring } from '../../motion.js'
 import { COURSE_BY_ID } from '../../data.path.js'
+import { TILE_TO_COURSE } from '../../access.js'
+import { readerMetrics, courseProgress, pickResume } from '../../progress.js'
 
 const QUICK = [
   { to: '/app/stories', emoji: '📖', label: 'Read a story', bg: '#DFF6E8' },
@@ -13,23 +15,9 @@ const QUICK = [
   { to: '/app/games', emoji: '🎮', label: 'Play a game', bg: '#FFE3EC' },
 ]
 
-// Map the reader's progress-tile names to real course ids so each tile can
-// deep-link into the matching course on the Learning Path.
-const PATH_TILE_TO_COURSE = {
-  Letters: 'LETTERS',
-  School: 'SCHOLL',
-  Astronaut: 'ASTRONAUT',
-  Space: 'SPACE',
-  Dinos: 'DINOSAURS',
-  Ocean: 'OCEAN_LIFE',
-  Science: 'SCIENCE_LAB',
-  Colours: 'COLORS_ART',
-  Art: 'COLORS_ART',
-}
-
 // Resolve a tile name → a valid /app/path/:courseId target (or null).
 function coursePathFor(name) {
-  const id = PATH_TILE_TO_COURSE[name]
+  const id = TILE_TO_COURSE[name]
   return id && COURSE_BY_ID[id] ? `/app/path/${id}` : null
 }
 
@@ -52,8 +40,9 @@ export default function Home() {
     )
   }
 
-  const s = activeReader.stats
   const lvl = levelById(activeReader.level)
+  const m = readerMetrics(activeReader) // real progress, computed live
+  const resume = pickResume(activeReader)
 
   return (
     <div className="space-y-8">
@@ -74,6 +63,44 @@ export default function Home() {
           </div>
         </div>
       </Reveal>
+
+      {/* jump back in — only when there's something in progress */}
+      {resume && (
+        <Reveal>
+          <Link to={resume.to} className="block rounded-3xl focus:outline-none focus-visible:ring-4 focus-visible:ring-grape/30">
+            <motion.div
+              whileHover={{ y: -3 }}
+              whileTap={{ scale: 0.99 }}
+              transition={spring.press}
+              className="flex items-center gap-4 rounded-3xl bg-white p-4 sm:p-5 ring-1 ring-black/5 shadow-[0_14px_34px_-26px_rgba(58,49,66,.6)]"
+            >
+              <span
+                className="grid place-items-center w-14 h-14 rounded-2xl text-3xl shrink-0"
+                style={{ background: `${resume.accent}1f` }}
+              >
+                {resume.emoji}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="text-[12px] font-extrabold uppercase tracking-wide" style={{ color: resume.accent }}>
+                  Jump back in
+                </div>
+                <div className="font-display font-extrabold text-ink text-lg leading-tight truncate">
+                  {resume.title}
+                </div>
+                <div className="mt-1.5 h-1.5 rounded-full bg-cream overflow-hidden">
+                  <div
+                    className="h-full rounded-full"
+                    style={{ width: `${Math.round((resume.done / resume.total) * 100)}%`, background: resume.accent }}
+                  />
+                </div>
+              </div>
+              <span className="font-display font-extrabold text-sm shrink-0" style={{ color: resume.accent }}>
+                Continue →
+              </span>
+            </motion.div>
+          </Link>
+        </Reveal>
+      )}
 
       {/* hero banner */}
       <Reveal>
@@ -122,21 +149,21 @@ export default function Home() {
         ))}
       </Stagger>
 
-      {/* stats */}
+      {/* stats — all derived from real activity */}
       <section>
         <SectionHead title="Your progress" emoji="🌟" />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <StatTile emoji="🔥" value={s.streak} label="Day streak" color="tangerine" delay={0} />
-          <StatTile emoji="📖" value={s.storiesRead} label="Stories read" color="grape" delay={60} />
-          <StatTile emoji="⏱️" value={s.minutesThisWeek} label="Minutes this week" color="mint" delay={120} />
-          <StatTile emoji="🔤" value={s.lettersLearned} label="Letters learned" color="sunny" delay={180} />
+          <StatTile emoji="🔥" value={m.streak} label="Day streak" color="tangerine" delay={0} />
+          <StatTile emoji="📖" value={m.storiesRead} label="Stories read" color="grape" delay={60} />
+          <StatTile emoji="⏱️" value={m.minutesThisWeek} label="Minutes this week" color="mint" delay={120} />
+          <StatTile emoji="🔤" value={m.lettersLearned} label="Letters learned" color="sunny" delay={180} />
         </div>
       </section>
 
       {/* week chart + path */}
       <section className="grid lg:grid-cols-2 gap-4 sm:gap-5 items-stretch">
         <Reveal>
-          <WeekBars week={s.week} color={activeReader.color} />
+          <WeekBars week={m.week} color={activeReader.color} />
         </Reveal>
         <div>
           <SectionHead
@@ -149,9 +176,14 @@ export default function Home() {
             }
           />
           <div className="grid sm:grid-cols-2 gap-3">
-            {s.path.map((p, i) => {
+            {(activeReader.stats?.path || []).map((p, i) => {
               const to = coursePathFor(p.name)
-              const tile = <PathTile {...p} delay={i * 60} />
+              const courseId = TILE_TO_COURSE[p.name]
+              // Real per-course completion (done + total) for the active reader.
+              const { done, total } = courseId
+                ? courseProgress(activeReader, courseId)
+                : { done: 0, total: p.total }
+              const tile = <PathTile name={p.name} emoji={p.emoji} color={p.color} done={done} total={total || p.total} delay={i * 60} />
               return to ? (
                 <Link
                   key={p.name}

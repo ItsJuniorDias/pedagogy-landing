@@ -8,6 +8,31 @@
 // -----------------------------------------------------------------------------
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
 import { SEED_READERS, freshStats } from '../data.app.js'
+import { todayKey } from '../access.js'
+
+// Empty progress map for a brand-new reader. Shape:
+//   stories/courses: { [contentId]: { completed:{[chId]:true}, page:{[chId]:n},
+//                                     lastChapterId, updatedAt } }
+//   activity: { minutesByDate:{[date]:min}, activeDates:{[date]:true}, lastActiveDate }
+const freshProgress = () => ({
+  stories: {},
+  courses: {},
+  activity: { minutesByDate: {}, activeDates: {}, lastActiveDate: null },
+})
+
+// Guarantee a reader has a well-formed progress object (covers older saves).
+const withProgress = (r) => ({
+  ...r,
+  progress: {
+    stories: r?.progress?.stories || {},
+    courses: r?.progress?.courses || {},
+    activity: {
+      minutesByDate: r?.progress?.activity?.minutesByDate || {},
+      activeDates: r?.progress?.activity?.activeDates || {},
+      lastActiveDate: r?.progress?.activity?.lastActiveDate || null,
+    },
+  },
+})
 
 const DB_KEY = 'pedagogy.db.v1' // { [email]: account }
 const CUR_KEY = 'pedagogy.current.v1' // email of the signed-in account
@@ -46,9 +71,10 @@ const makeAccount = ({ name, email, avatar = '🦉', firstReader, seed = false }
       age: firstReader.age ?? 5,
       level: firstReader.level || 'explorer',
       stats: freshStats(),
+      progress: freshProgress(),
     })
   }
-  if (seed) readers.push(...SEED_READERS.map((r) => ({ ...r })))
+  if (seed) readers.push(...SEED_READERS.map((r) => withProgress({ ...r })))
   return {
     user: { name: name || 'Friend', email, avatar, plan: 'Free' },
     readers,
@@ -64,7 +90,11 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const email = readJSON(CUR_KEY, null)
     const db = readJSON(DB_KEY, {})
-    if (email && db[email]) setAccount(db[email])
+    if (email && db[email]) {
+      const a = db[email]
+      // Migrate older saves so every reader has a progress object.
+      setAccount({ ...a, readers: (a.readers || []).map(withProgress) })
+    }
     setReady(true)
   }, [])
 
@@ -121,6 +151,7 @@ export function AuthProvider({ children }) {
         age: reader.age ?? 5,
         level: reader.level || 'explorer',
         stats: freshStats(),
+        progress: freshProgress(),
       }
       const readers = [...a.readers, r]
       return { ...a, readers, activeReaderId: a.activeReaderId || id }
@@ -150,6 +181,134 @@ export function AuthProvider({ children }) {
     setAccount((a) => (a ? { ...a, activeReaderId: id } : a))
   }, [])
 
+  // --- reading progress (per active reader, persisted via the account) -------
+  // Apply a transform to the active reader (always with a normalized progress).
+  const updateActiveReader = useCallback((fn) => {
+    setAccount((a) => {
+      if (!a) return a
+      const readers = a.readers.map((r) => (r.id === a.activeReaderId ? fn(withProgress(r)) : r))
+      return { ...a, readers }
+    })
+  }, [])
+
+  const markActive = (activity) => {
+    const today = todayKey()
+    return {
+      ...activity,
+      activeDates: { ...activity.activeDates, [today]: true },
+      lastActiveDate: today,
+    }
+  }
+
+  // Mark a chapter/lesson finished + log today as an active reading day.
+  const markChapterRead = useCallback(
+    (kind, contentId, chapterId) => {
+      const key = String(chapterId)
+      const bucket = kind === 'lesson' ? 'courses' : 'stories'
+      updateActiveReader((r) => {
+        const prog = r.progress
+        const entry = prog[bucket][contentId] || { completed: {}, page: {} }
+        return {
+          ...r,
+          progress: {
+            ...prog,
+            [bucket]: {
+              ...prog[bucket],
+              [contentId]: {
+                ...entry,
+                completed: { ...entry.completed, [key]: true },
+                lastChapterId: key,
+                updatedAt: Date.now(),
+              },
+            },
+            activity: markActive(prog.activity),
+          },
+        }
+      })
+    },
+    [updateActiveReader]
+  )
+
+  // Add reading time (seconds) to today's tally — powers minutes + the week chart.
+  const recordReading = useCallback(
+    (seconds = 0) => {
+      if (!seconds || seconds < 0) return
+      const today = todayKey()
+      updateActiveReader((r) => {
+        const a = r.progress.activity
+        return {
+          ...r,
+          progress: {
+            ...r.progress,
+            activity: {
+              ...markActive(a),
+              minutesByDate: { ...a.minutesByDate, [today]: (a.minutesByDate[today] || 0) + seconds / 60 },
+            },
+          },
+        }
+      })
+    },
+    [updateActiveReader]
+  )
+
+  // Remember the current page so the reader can resume later.
+  const saveReadingPosition = useCallback(
+    (kind, contentId, chapterId, page) => {
+      const key = String(chapterId)
+      const bucket = kind === 'lesson' ? 'courses' : 'stories'
+      updateActiveReader((r) => {
+        const prog = r.progress
+        const entry = prog[bucket][contentId] || { completed: {}, page: {} }
+        return {
+          ...r,
+          progress: {
+            ...prog,
+            [bucket]: {
+              ...prog[bucket],
+              [contentId]: {
+                ...entry,
+                page: { ...entry.page, [key]: page },
+                lastChapterId: key,
+                updatedAt: Date.now(),
+              },
+            },
+          },
+        }
+      })
+    },
+    [updateActiveReader]
+  )
+
+  // --- subscription ----------------------------------------------------------
+  // Flip the account to a paid plan. (Until Mercado Pago is wired up this is
+  // called by the dev "Simulate subscription" button on the paywall.)
+  const upgradePlan = useCallback((plan = 'Premium', sub = {}) => {
+    setAccount((a) =>
+      a
+        ? {
+            ...a,
+            user: {
+              ...a.user,
+              plan,
+              subscription: {
+                status: 'active',
+                since: Date.now(),
+                provider: 'mock',
+                ...sub,
+              },
+            },
+          }
+        : a
+    )
+  }, [])
+
+  // Revert to Free (dev helper for testing the paywall both ways).
+  const cancelPlan = useCallback(() => {
+    setAccount((a) =>
+      a ? { ...a, user: { ...a.user, plan: 'Free', subscription: null } } : a
+    )
+  }, [])
+
   const value = useMemo(() => {
     const readers = account?.readers || []
     const activeReader =
@@ -168,6 +327,11 @@ export function AuthProvider({ children }) {
       updateReader,
       removeReader,
       setActiveReader,
+      markChapterRead,
+      recordReading,
+      saveReadingPosition,
+      upgradePlan,
+      cancelPlan,
     }
   }, [
     account,
@@ -180,6 +344,11 @@ export function AuthProvider({ children }) {
     updateReader,
     removeReader,
     setActiveReader,
+    markChapterRead,
+    recordReading,
+    saveReadingPosition,
+    upgradePlan,
+    cancelPlan,
   ])
 
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>

@@ -3,6 +3,8 @@ import { motion } from 'framer-motion'
 import { IMG } from '../../assets.js'
 import ReaderSwitcher from './ReaderSwitcher.jsx'
 import { spring } from '../../motion.js'
+import { useAuth } from '../../auth/AuthContext.jsx'
+import { isPremiumPlan } from '../../access.js'
 
 // --- inline icons -----------------------------------------------------------
 const Icon = ({ d, fill }) => (
@@ -48,6 +50,8 @@ function SideLink({ to, label, Icon, end }) {
 }
 
 export default function AppLayout() {
+  const { user } = useAuth()
+  const premium = isPremiumPlan(user?.plan)
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#FFF4E8] via-[#FFF6F0] to-[#FBEFF6] text-ink">
       {/* ---------- desktop sidebar ---------- */}
@@ -63,13 +67,22 @@ export default function AppLayout() {
           ))}
         </nav>
 
-        <div className="mt-auto rounded-2xl bg-gradient-to-br from-grape to-graped p-4 text-white">
-          <p className="font-display font-extrabold text-lg leading-tight">Unlock every story ✨</p>
-          <p className="text-white/85 text-sm font-semibold mt-1">Go Premium for the full path & offline reading.</p>
-          <Link to="/#pricing" className="btn3d b-sun w-full mt-3 px-4 py-2.5 text-sm">
-            See plans
-          </Link>
-        </div>
+        {premium ? (
+          <div className="mt-auto rounded-2xl bg-gradient-to-br from-mint to-mintd p-4 text-white">
+            <p className="font-display font-extrabold text-lg leading-tight">Premium ✨</p>
+            <p className="text-white/85 text-sm font-semibold mt-1">
+              Every story and the full path are unlocked. Happy reading!
+            </p>
+          </div>
+        ) : (
+          <div className="mt-auto rounded-2xl bg-gradient-to-br from-grape to-graped p-4 text-white">
+            <p className="font-display font-extrabold text-lg leading-tight">Unlock every story ✨</p>
+            <p className="text-white/85 text-sm font-semibold mt-1">Go Premium for the full path & offline reading.</p>
+            <Link to="/app/paywall" className="btn3d b-sun w-full mt-3 px-4 py-2.5 text-sm">
+              See plans
+            </Link>
+          </div>
+        )}
       </aside>
 
       {/* ---------- top bar ---------- */}

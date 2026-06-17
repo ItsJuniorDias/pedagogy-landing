@@ -1,27 +1,38 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Reveal } from '../../components/ui.jsx'
 import { spring } from '../../motion.js'
 import { PATH_COURSES, resolveCourse } from '../../data.path.js'
+import { useAuth } from '../../auth/AuthContext.jsx'
+import {
+  isChapterAccessible,
+  isChapterComplete,
+  isPremiumPlan,
+  completedCount,
+  accessibleCount,
+  hasLockedChapters,
+  lockedCount,
+  getProgress,
+} from '../../access.js'
 
-// A single lesson "node" on the unit trail. Unlocked → links into the reader;
-// locked → dimmed and non-interactive.
-function LessonNode({ courseId, accent, lesson, index }) {
-  const locked = !!lesson.locked
+// A single lesson "node" on the unit trail.
+//   premium (locked) lesson on Free → tap routes to the paywall
+//   complete / accessible           → links into the reader
+function LessonNode({ courseId, accent, lesson, index, accessible, complete, onPremium }) {
+  const premiumRow = !accessible
 
   const node = (
     <span
       className="relative z-10 grid place-items-center w-12 h-12 rounded-full shrink-0 text-2xl"
       style={
-        locked
-          ? { background: '#EEE9F2', color: '#9A93A6' }
-          : {
-              background: '#fff',
-              boxShadow: `0 0 0 3px ${accent}, 0 8px 18px -10px ${accent}aa`,
-            }
+        complete
+          ? { background: '#DFF6E8', boxShadow: '0 0 0 3px #16BFA6' }
+          : premiumRow
+          ? { background: '#FBEFD2', boxShadow: '0 0 0 3px #E9B400' }
+          : { background: '#fff', boxShadow: `0 0 0 3px ${accent}, 0 8px 18px -10px ${accent}aa` }
       }
     >
-      {locked ? '🔒' : lesson.emoji || '📖'}
+      {complete ? '✅' : premiumRow ? '👑' : lesson.emoji || '📖'}
     </span>
   )
 
@@ -29,31 +40,36 @@ function LessonNode({ courseId, accent, lesson, index }) {
     <div className="min-w-0 flex-1">
       <div
         className="text-[12px] font-extrabold uppercase tracking-wide"
-        style={{ color: locked ? '#9A93A6' : accent }}
+        style={{ color: premiumRow ? '#B07A12' : accent }}
       >
         {lesson.title || `Lesson ${index + 1}`}
+        {complete && <span className="ml-2 text-mintd">· Done</span>}
+        {premiumRow && <span className="ml-2 text-sunnyd">· Premium</span>}
       </div>
       <div
-        className={
-          'font-display font-extrabold leading-tight ' +
-          (locked ? 'text-inksoft/60' : 'text-ink')
-        }
+        className={'font-display font-extrabold leading-tight ' + (premiumRow ? 'text-inksoft/70' : 'text-ink')}
       >
         {lesson.subtitle || lesson.title || `Lesson ${index + 1}`}
       </div>
     </div>
   )
 
-  if (locked) {
+  if (premiumRow) {
     return (
-      <div
-        className="relative flex items-center gap-4 rounded-2xl bg-white/55 px-3 py-2.5 ring-1 ring-black/5 opacity-70 cursor-not-allowed"
-        aria-disabled="true"
-        title="Locked — keep going to unlock"
+      <motion.button
+        type="button"
+        onClick={onPremium}
+        whileHover={{ x: 3 }}
+        whileTap={{ scale: 0.985 }}
+        transition={spring.press}
+        className="w-full text-left relative flex items-center gap-4 rounded-2xl bg-butter/70 px-3 py-2.5 ring-1 ring-sunnyd/20 focus:outline-none focus-visible:ring-4 focus-visible:ring-grape/30"
       >
         {node}
         {body}
-      </div>
+        <span className="font-display font-extrabold text-sm shrink-0" style={{ color: '#B07A12' }}>
+          Unlock →
+        </span>
+      </motion.button>
     )
   }
 
@@ -71,7 +87,7 @@ function LessonNode({ courseId, accent, lesson, index }) {
         {node}
         {body}
         <span className="font-display font-extrabold text-sm shrink-0" style={{ color: accent }}>
-          Start →
+          {complete ? 'Re-read →' : 'Start →'}
         </span>
       </motion.div>
     </Link>
@@ -81,8 +97,21 @@ function LessonNode({ courseId, accent, lesson, index }) {
 // One course = one "unit": a tinted header followed by its lessons as a
 // vertical trail (a spine connects the nodes).
 function CourseUnit({ course }) {
+  const navigate = useNavigate()
+  const { user, activeReader } = useAuth()
+  const plan = user?.plan
   const { lessons } = resolveCourse(course.id)
-  const unlocked = lessons.filter((l) => !l.locked).length
+
+  const prog = getProgress(activeReader, 'lesson', course.id)
+  const done = completedCount(lessons, prog)
+  const unlocked = accessibleCount(lessons, plan)
+  const premiumCount = lockedCount(lessons)
+  const hasPremium = hasLockedChapters(lessons) && !isPremiumPlan(plan)
+
+  const openPaywall = () =>
+    navigate('/app/paywall', {
+      state: { kind: 'course', title: course.title, emoji: course.emoji, from: `/app/path/${course.id}` },
+    })
 
   return (
     <Reveal className="space-y-3">
@@ -104,6 +133,11 @@ function CourseUnit({ course }) {
                 {course.tag}
               </span>
               <span className="text-[12px] font-bold text-ink/70">Ages {course.ageRange}</span>
+              {hasPremium && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-ink/85 px-2.5 py-0.5 text-[12px] font-extrabold text-sunny">
+                  👑 Premium
+                </span>
+              )}
             </div>
             <h2 className="mt-1 font-display font-extrabold text-xl sm:text-2xl text-ink leading-tight">
               {course.title}
@@ -119,7 +153,17 @@ function CourseUnit({ course }) {
             ✨ {course.peculiarity}
           </span>
           <span aria-hidden>·</span>
-          <span>{unlocked} of {lessons.length} unlocked</span>
+          <span>
+            {done} of {lessons.length} done
+          </span>
+          {hasPremium && (
+            <>
+              <span aria-hidden>·</span>
+              <button type="button" onClick={openPaywall} className="font-extrabold text-grape hover:underline">
+                👑 Unlock {premiumCount} premium
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -139,6 +183,9 @@ function CourseUnit({ course }) {
                 accent={course.accent}
                 lesson={lesson}
                 index={i}
+                accessible={isChapterAccessible(lesson, plan)}
+                complete={isChapterComplete(prog, lesson, i)}
+                onPremium={openPaywall}
               />
             ))}
           </div>
@@ -158,8 +205,8 @@ export default function Path() {
           Learning Path <span className="align-middle">🧭</span>
         </h1>
         <p className="mt-1.5 text-inksoft font-semibold">
-          {PATH_COURSES.length} guided courses · {totalLessons} lessons to explore. Follow the
-          trail and unlock each step as you go.
+          {PATH_COURSES.length} guided courses · {totalLessons} lessons to explore. Read the free
+          lessons and unlock the rest with Premium.
         </p>
       </Reveal>
 

@@ -1,8 +1,18 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Reveal } from '../ui.jsx'
 import { spring } from '../../motion.js'
+import { useAuth } from '../../auth/AuthContext.jsx'
+import {
+  getProgress,
+  isChapterAccessible,
+  isPremiumPlan,
+  isChapterComplete,
+  completedCount,
+  resumeIndex,
+  chapterKey,
+} from '../../access.js'
 
 // -----------------------------------------------------------------------------
 // Reader — shared reading surface for BOTH story chapters and learning-path
@@ -491,33 +501,65 @@ export default function Reader({
   chapters = [],
   status = 'playable',
   kind = 'chapter',
+  contentId,
   initialChapterIndex = null,
 }) {
   const L = LABELS[kind] || LABELS.chapter
+  const navigate = useNavigate()
+  const { user, activeReader, markChapterRead, recordReading, saveReadingPosition } = useAuth()
+  const plan = user?.plan
 
-  // Open directly to a specific item only if it exists and isn't locked.
+  // This reader's progress for this story/course (drives completion + resume).
+  const progress = useMemo(
+    () => getProgress(activeReader, kind, contentId),
+    [activeReader, kind, contentId]
+  )
+  const doneCount = useMemo(() => completedCount(chapters, progress), [chapters, progress])
+
+  // Send the user to the paywall to unlock premium (locked) chapters.
+  const openPaywall = useCallback(() => {
+    navigate('/app/paywall', {
+      state: {
+        kind: kind === 'lesson' ? 'course' : 'story',
+        title: card?.title,
+        emoji: card?.emoji,
+        from: typeof window !== 'undefined' ? window.location.pathname : undefined,
+      },
+    })
+  }, [navigate, kind, card])
+
+  // Open directly to a specific item only if it exists and is accessible.
   const validInitial =
     initialChapterIndex != null &&
     initialChapterIndex >= 0 &&
     initialChapterIndex < chapters.length &&
-    !chapters[initialChapterIndex]?.locked
+    isChapterAccessible(chapters[initialChapterIndex], plan)
       ? initialChapterIndex
       : null
 
   const [chapterIdx, setChapterIdx] = useState(validInitial) // null = list view
-  const [pageIdx, setPageIdx] = useState(0)
+  const [pageIdx, setPageIdx] = useState(() =>
+    validInitial != null
+      ? progress.page?.[chapterKey(chapters[validInitial], validInitial)] || 0
+      : 0
+  )
   const [dir, setDir] = useState(1)
 
   const chapter = chapterIdx != null ? chapters[chapterIdx] : null
+  const chId = chapter ? chapterKey(chapter, chapterIdx) : null
   const pages = chapter?.pages || []
   const pec = useMemo(() => detectPeculiarity(chapter), [chapter])
 
-  const openChapter = useCallback((i) => {
-    setChapterIdx(i)
-    setPageIdx(0)
-    setDir(1)
-    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' })
-  }, [])
+  const openChapter = useCallback(
+    (i) => {
+      const startPage = progress.page?.[chapterKey(chapters[i], i)] || 0
+      setChapterIdx(i)
+      setPageIdx(startPage)
+      setDir(1)
+      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' })
+    },
+    [chapters, progress]
+  )
 
   const closeChapter = useCallback(() => {
     setChapterIdx(null)
@@ -535,6 +577,50 @@ export default function Reader({
     },
     [pages.length]
   )
+
+  // Persist reading position + mark the chapter complete on the last page.
+  useEffect(() => {
+    if (chapterIdx == null || !chId || !contentId) return
+    saveReadingPosition(kind, contentId, chId, pageIdx)
+    if (pages.length > 0 && pageIdx === pages.length - 1) {
+      markChapterRead(kind, contentId, chId)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chapterIdx, chId, pageIdx, pages.length])
+
+  // Track reading time while a chapter is open and the tab is visible. Flushes
+  // whole seconds periodically and on exit → feeds "minutes" + the week chart.
+  useEffect(() => {
+    if (chapterIdx == null || !contentId) return
+    let last = Date.now()
+    let carry = 0
+    const flush = () => {
+      const now = Date.now()
+      if (typeof document !== 'undefined' && document.hidden) {
+        last = now
+        return
+      }
+      carry += now - last
+      last = now
+      const secs = Math.floor(carry / 1000)
+      if (secs > 0) {
+        carry -= secs * 1000
+        recordReading(secs)
+      }
+    }
+    const onVisibility = () => {
+      if (typeof document !== 'undefined' && document.hidden) flush()
+      else last = Date.now()
+    }
+    const id = setInterval(flush, 15000)
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      flush()
+      clearInterval(id)
+      if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVisibility)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chapterIdx, contentId])
 
   // Keyboard navigation while reading.
   useEffect(() => {
@@ -617,44 +703,95 @@ export default function Reader({
         </Reveal>
 
         <div>
-          <h2 className="font-display font-extrabold text-xl text-ink mb-3">{L.list}</h2>
+          <div className="flex items-end justify-between gap-3 mb-3">
+            <h2 className="font-display font-extrabold text-xl text-ink">{L.list}</h2>
+            <span className="text-[13px] font-bold text-inksoft">
+              {doneCount}/{chapters.length} done
+            </span>
+          </div>
+
+          {/* slim progress bar */}
+          <div className="h-2 rounded-full bg-cream overflow-hidden mb-4" aria-hidden="true">
+            <div
+              className="h-full rounded-full transition-[width] duration-500"
+              style={{
+                width: `${Math.round((doneCount / Math.max(1, chapters.length)) * 100)}%`,
+                background: card.accent,
+              }}
+            />
+          </div>
+
+          {/* resume shortcut while a story/course is in progress */}
+          {doneCount > 0 && doneCount < chapters.length && (
+            <button
+              type="button"
+              onClick={() => openChapter(resumeIndex(chapters, progress, plan))}
+              className="btn3d b-grape w-full sm:w-auto px-5 py-3 mb-4"
+            >
+              ▶ Continue {L.item.toLowerCase()} {resumeIndex(chapters, progress, plan) + 1}
+            </button>
+          )}
+
           <div className="space-y-2.5">
             {chapters.map((ch, i) => {
-              const locked = !!ch.locked
+              const accessible = isChapterAccessible(ch, plan)
+              const complete = isChapterComplete(progress, ch, i)
+              const premiumRow = !accessible // locked + Free plan
               const inner = (
                 <div className="flex items-center gap-3.5">
                   <span
                     className="grid place-items-center w-11 h-11 rounded-2xl text-xl shrink-0"
-                    style={{ background: locked ? '#EEE9F2' : `${card.accent}1f` }}
+                    style={{
+                      background: complete
+                        ? '#DFF6E8'
+                        : premiumRow
+                        ? '#FBEFD2'
+                        : `${card.accent}1f`,
+                    }}
                   >
-                    {locked ? '🔒' : ch.emoji || '📖'}
+                    {complete ? '✅' : premiumRow ? '👑' : ch.emoji || '📖'}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <div className="text-[12px] font-extrabold uppercase tracking-wide" style={{ color: locked ? '#9A93A6' : card.accent }}>
+                    <div
+                      className="text-[12px] font-extrabold uppercase tracking-wide"
+                      style={{ color: premiumRow ? '#B07A12' : card.accent }}
+                    >
                       {ch.title || `${L.item} ${i + 1}`}
+                      {complete && <span className="ml-2 text-mintd">· Done</span>}
+                      {premiumRow && <span className="ml-2 text-sunnyd">· Premium</span>}
                     </div>
-                    <div className={'font-display font-extrabold leading-tight truncate ' + (locked ? 'text-inksoft/60' : 'text-ink')}>
+                    <div
+                      className={
+                        'font-display font-extrabold leading-tight truncate ' +
+                        (premiumRow ? 'text-inksoft/70' : 'text-ink')
+                      }
+                    >
                       {ch.subtitle || ch.title || `${L.item} ${i + 1}`}
                     </div>
                   </div>
-                  {!locked && (
-                    <span className="font-display font-extrabold text-sm" style={{ color: card.accent }}>
-                      Read →
-                    </span>
-                  )}
+                  <span
+                    className="font-display font-extrabold text-sm shrink-0"
+                    style={{ color: premiumRow ? '#B07A12' : card.accent }}
+                  >
+                    {premiumRow ? 'Unlock →' : complete ? 'Re-read' : 'Read →'}
+                  </span>
                 </div>
               )
 
-              if (locked) {
+              // Locked chapter on the Free plan → tap goes to the paywall.
+              if (premiumRow) {
                 return (
-                  <div
+                  <motion.button
                     key={ch.id || i}
-                    className="rounded-2xl bg-white/60 p-3.5 ring-1 ring-black/5 opacity-70 cursor-not-allowed"
-                    aria-disabled="true"
-                    title="Locked — keep going to unlock"
+                    type="button"
+                    onClick={openPaywall}
+                    whileHover={{ x: 3 }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={spring.press}
+                    className="w-full text-left rounded-2xl bg-butter/70 p-3.5 ring-1 ring-sunnyd/20 focus:outline-none focus-visible:ring-4 focus-visible:ring-grape/30"
                   >
                     {inner}
-                  </div>
+                  </motion.button>
                 )
               }
               return (
@@ -760,15 +897,26 @@ export default function Reader({
         </div>
 
         {atEnd ? (
-          chapterIdx < chapters.length - 1 && !chapters[chapterIdx + 1]?.locked ? (
-            <button
-              type="button"
-              onClick={() => openChapter(chapterIdx + 1)}
-              className="btn3d b-grape px-5 py-3"
-              aria-label={`Next ${L.item.toLowerCase()}`}
-            >
-              Next {L.short} →
-            </button>
+          chapterIdx < chapters.length - 1 ? (
+            isChapterAccessible(chapters[chapterIdx + 1], plan) ? (
+              <button
+                type="button"
+                onClick={() => openChapter(chapterIdx + 1)}
+                className="btn3d b-grape px-5 py-3"
+                aria-label={`Next ${L.item.toLowerCase()}`}
+              >
+                Next {L.short} →
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={openPaywall}
+                className="btn3d b-sun px-5 py-3"
+                aria-label={`Unlock the next ${L.item.toLowerCase()}`}
+              >
+                👑 Unlock next
+              </button>
+            )
           ) : (
             <button
               type="button"
