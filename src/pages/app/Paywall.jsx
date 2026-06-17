@@ -32,6 +32,16 @@ function PlanCard({
   selected,
   onSelect,
 }) {
+  const checkClasses =
+    "shrink-0 grid place-items-center w-6 h-6 rounded-full text-[13px] font-extrabold ring-1 " +
+    (selected
+      ? highlight
+        ? "bg-sunny text-ink ring-transparent"
+        : "bg-grape text-white ring-transparent"
+      : highlight
+        ? "bg-white/15 text-transparent ring-white/30"
+        : "bg-cream text-transparent ring-black/10");
+
   return (
     <motion.button
       type="button"
@@ -41,7 +51,7 @@ function PlanCard({
       transition={spring.press}
       aria-pressed={selected}
       className={
-        "relative h-full text-left rounded-3xl p-6 sm:p-7 flex flex-col transition-shadow focus:outline-none " +
+        "relative h-full w-full text-left rounded-3xl p-6 sm:p-7 flex flex-col transition-shadow focus:outline-none " +
         (highlight
           ? "text-white ring-1 ring-white/15"
           : "bg-white text-ink ring-1 " +
@@ -55,40 +65,34 @@ function PlanCard({
       }
     >
       {highlight && (
-        <span className="absolute -top-3 right-6 rounded-full bg-sunny text-ink text-[12px] font-extrabold px-3 py-1 shadow">
+        <span className="absolute -top-3 right-5 rounded-full bg-sunny text-ink text-[11px] sm:text-[12px] font-extrabold px-3 py-1 shadow">
           ★ BEST VALUE
         </span>
       )}
 
-      {/* selection check */}
-      <span
-        className={
-          "absolute top-5 left-5 grid place-items-center w-6 h-6 rounded-full text-[13px] font-extrabold " +
-          (selected
-            ? highlight
-              ? "bg-sunny text-ink"
-              : "bg-grape text-white"
-            : highlight
-              ? "bg-white/20 text-white/70"
-              : "bg-cream text-inksoft")
-        }
-        aria-hidden="true"
-      >
-        {selected ? "✓" : ""}
-      </span>
-
-      <div
-        className={
-          "font-display font-extrabold text-xl " + (highlight ? "" : "text-ink")
-        }
-      >
-        {name}
-      </div>
-      <div className="mt-2 flex items-end gap-1">
-        <span className="font-display font-extrabold text-5xl">{price}</span>
+      {/* title row — check sits inline so it never overlaps the name */}
+      <div className={"flex items-center gap-2.5 " + (highlight ? "mt-1" : "")}>
+        <span className={checkClasses} aria-hidden="true">
+          ✓
+        </span>
         <span
           className={
-            "mb-1.5 font-bold " + (highlight ? "text-white/80" : "text-inksoft")
+            "font-display font-extrabold text-lg sm:text-xl " +
+            (highlight ? "" : "text-ink")
+          }
+        >
+          {name}
+        </span>
+      </div>
+
+      <div className="mt-3 flex items-end gap-1">
+        <span className="font-display font-extrabold text-4xl sm:text-5xl leading-none">
+          {price}
+        </span>
+        <span
+          className={
+            "mb-1 font-bold text-sm sm:text-base " +
+            (highlight ? "text-white/80" : "text-inksoft")
           }
         >
           / {per}
@@ -96,7 +100,7 @@ function PlanCard({
       </div>
       <p
         className={
-          "mt-1.5 font-bold text-[14px] " +
+          "mt-2 font-bold text-[13px] sm:text-[14px] " +
           (highlight ? "text-sunny" : "text-inksoft")
         }
       >
@@ -108,7 +112,7 @@ function PlanCard({
           <li
             key={i}
             className={
-              "flex gap-2.5 font-bold text-[15px] " +
+              "flex gap-2.5 font-bold text-[14px] sm:text-[15px] " +
               (highlight ? "" : "text-ink")
             }
           >
@@ -219,7 +223,7 @@ export default function Paywall() {
   };
 
   return (
-    <div className="space-y-8 max-w-3xl mx-auto">
+    <div className="space-y-6 max-w-3xl mx-auto">
       <Reveal>
         <Link
           to={goBack}
@@ -232,25 +236,25 @@ export default function Paywall() {
       {/* hero */}
       <Reveal delay={40}>
         <div
-          className="relative overflow-hidden rounded-[28px] p-7 sm:p-9 text-white"
+          className="relative overflow-hidden rounded-3xl p-6 sm:p-7 text-white"
           style={{ background: "linear-gradient(140deg,#6D4BE0,#5435C4)" }}
         >
-          <div className="relative z-10 max-w-xl">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[12px] font-extrabold uppercase tracking-wide">
+          <div className="relative z-10 max-w-md">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] sm:text-[12px] font-extrabold uppercase tracking-wide">
               ✨ Pedagogy Premium
             </span>
-            <h1 className="mt-3 font-display font-extrabold text-3xl sm:text-4xl leading-tight">
+            <h1 className="mt-3 font-display font-extrabold text-2xl sm:text-3xl leading-tight">
               {ctx.title
                 ? `Unlock ${ctx.title}`
                 : "Unlock the whole world of stories"}
             </h1>
-            <p className="mt-2 text-white/85 font-semibold text-lg">
+            <p className="mt-2 text-white/85 font-semibold text-[15px] sm:text-base leading-snug">
               {ctx.title
                 ? "Plus every other story, the full learning path, and new content each month."
                 : "50+ interactive stories, the full phonics path, and mini-games — all in one plan."}
             </p>
           </div>
-          <div className="pointer-events-none absolute -right-3 -bottom-5 text-[7rem] opacity-90 select-none">
+          <div className="pointer-events-none absolute -right-2 -bottom-4 text-[4.5rem] sm:text-[6rem] opacity-90 select-none">
             {ctx.emoji || "🪄"}
           </div>
         </div>
@@ -258,7 +262,7 @@ export default function Paywall() {
 
       {/* plans */}
       <Stagger
-        className="grid sm:grid-cols-2 gap-5 items-stretch"
+        className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-stretch max-w-sm sm:max-w-2xl mx-auto"
         stagger={0.1}
       >
         <RevealItem variants={fadeUp}>
@@ -279,7 +283,7 @@ export default function Paywall() {
 
       {/* checkout */}
       <Reveal>
-        <div className="rounded-3xl bg-white p-6 ring-1 ring-black/5 shadow-[0_18px_40px_-30px_rgba(58,49,66,.6)]">
+        <div className="rounded-3xl bg-white p-5 sm:p-6 ring-1 ring-black/5 shadow-[0_18px_40px_-30px_rgba(58,49,66,.6)]">
           <motion.button
             type="button"
             onClick={handleSubscribe}
@@ -287,7 +291,7 @@ export default function Paywall() {
             whileTap={{ scale: 0.98 }}
             transition={spring.press}
             className={
-              "btn3d b-grape w-full px-6 py-4 text-lg " +
+              "btn3d b-grape w-full px-6 py-3.5 text-base sm:text-lg " +
               (working ? "opacity-70 pointer-events-none" : "")
             }
           >
