@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Landing from './pages/Landing.jsx'
 import Login from './pages/Login.jsx'
@@ -11,7 +12,18 @@ import StoryReader from './pages/app/StoryReader.jsx'
 import Path from './pages/app/Path.jsx'
 import LessonReader from './pages/app/LessonReader.jsx'
 import Paywall from './pages/app/Paywall.jsx'
-import ComingSoon from './pages/app/ComingSoon.jsx'
+
+// Games pulls in three.js / R3F / drei — lazy-load it so that weight only
+// downloads when the player actually opens the Games tab.
+const Games = lazy(() => import('./pages/app/Games.jsx'))
+
+function GamesFallback() {
+  return (
+    <div className="grid place-items-center py-24">
+      <div className="text-5xl animate-bounce">🏓</div>
+    </div>
+  )
+}
 
 export default function App() {
   return (
@@ -40,7 +52,11 @@ export default function App() {
         <Route path="paywall" element={<Paywall />} />
         <Route
           path="games"
-          element={<ComingSoon emoji="🎮" title="Games" blurb="Practice-as-play mini-games. Mocks coming soon!" />}
+          element={
+            <Suspense fallback={<GamesFallback />}>
+              <Games />
+            </Suspense>
+          }
         />
       </Route>
 
