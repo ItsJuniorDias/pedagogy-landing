@@ -323,26 +323,6 @@ export default function Paywall() {
           </p>
         </div>
       </Reveal>
-
-      {/* dev preview — remove once Mercado Pago is connected */}
-      <Reveal>
-        <div className="rounded-3xl border-2 border-dashed border-grape/30 bg-lilac/20 p-5">
-          <div className="flex items-center gap-2 text-[12px] font-extrabold uppercase tracking-wide text-grape">
-            🛠️ Developer preview
-          </div>
-          <p className="mt-1.5 text-[14px] font-semibold text-inksoft">
-            Payments aren’t wired up yet. Use this to simulate a successful
-            subscription and test the unlock flow end to end.
-          </p>
-          <button
-            type="button"
-            onClick={handleSimulate}
-            className="btn3d b-white ring-1 ring-grape/15 px-5 py-3 mt-3"
-          >
-            Simulate subscription ({plans[selected].name})
-          </button>
-        </div>
-      </Reveal>
     </div>
   );
 }
