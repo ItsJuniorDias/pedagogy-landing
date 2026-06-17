@@ -1,5 +1,5 @@
 import { Reveal } from '../../components/ui.jsx'
-import PongGame from '../../components/app/PongGame.jsx'
+import NeonPong from '../../components/app/NeonPong.jsx'
 
 export default function Games() {
   return (
@@ -9,12 +9,20 @@ export default function Games() {
           Games <span className="align-middle">🎮</span>
         </h1>
         <p className="mt-1.5 text-inksoft font-semibold">
-          Practice-as-play. First up: a 3D ping pong match — beat the CPU or challenge a friend.
+          Practice-as-play. First up: <span className="text-grape font-extrabold">Neon Pong</span> — beat the CPU. Drag to
+          move your paddle, and swipe sideways to curve the ball.
         </p>
       </Reveal>
 
       <Reveal delay={60}>
-        <PongGame />
+        {/* The game owns a dark, neon look — frame it in a rounded card and give
+            it a fixed height (NeonPong fills its parent). */}
+        <div
+          className="rounded-[28px] overflow-hidden ring-1 ring-black/5 shadow-[0_18px_44px_-28px_rgba(58,49,66,.7)]"
+          style={{ height: 'min(78vh, 680px)' }}
+        >
+          <NeonPong />
+        </div>
       </Reveal>
     </div>
   )
