@@ -16,6 +16,8 @@ import {
   startSubscriptionCheckout,
   isCheckoutConfigured,
   readCheckoutReturn,
+  readPendingCheckout,
+  clearPendingCheckout,
 } from "../../payments/mercadopago.js";
 
 // Where to send people who back out, based on what they tried to unlock.
@@ -170,14 +172,21 @@ export default function Paywall() {
     if (!ret) return;
 
     if (ret.status === "approved") {
+      // location.state was lost on the external redirect — recover the chosen
+      // plan and return path from the pre-redirect stash (sessionStorage).
+      const pending = readPendingCheckout();
+      const planId = pending?.planId || selected;
+      const returnTo = pending?.returnTo || ctx.from || "/app";
       upgradePlan("Premium", {
-        plan: selected,
-        cycle: plans[selected]?.per,
+        plan: planId,
+        cycle: plans[planId]?.per,
         provider: "mercadopago",
         preapprovalId: ret.preapprovalId,
       });
-      navigate(ctx.from || "/app", { replace: true });
+      clearPendingCheckout();
+      navigate(returnTo, { replace: true });
     } else if (ret.status === "cancelled") {
+      clearPendingCheckout();
       setNotice("cancelled");
       // Strip the params so a refresh doesn't re-trigger the notice.
       setSearchParams({}, { replace: true });
@@ -206,6 +215,7 @@ export default function Paywall() {
       const res = await startSubscriptionCheckout({
         planId: selected,
         email: user?.email,
+        returnTo: ctx.from,
       });
       // On success the browser is redirecting; only handle the no-redirect case.
       if (!res?.ok) setNotice("coming-soon");

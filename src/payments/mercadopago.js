@@ -59,18 +59,58 @@ export function buildCheckoutUrl(planId) {
   return url.toString();
 }
 
+// Mercado Pago's hosted checkout is a FULL-PAGE redirect, so React Router's
+// in-memory `location.state` (which plan was chosen, where to return) is lost on
+// the round-trip. sessionStorage survives navigating away and back within the
+// same tab, so we stash that context here and recover it on return.
+const PENDING_KEY = "mp.pendingCheckout";
+
+/** Remember the chosen plan + return path before redirecting to checkout. */
+export function stashPendingCheckout(data = {}) {
+  try {
+    sessionStorage.setItem(
+      PENDING_KEY,
+      JSON.stringify({ ...data, ts: Date.now() }),
+    );
+  } catch {
+    /* storage unavailable (private mode) — degrade gracefully */
+  }
+}
+
+/** Read the stashed checkout context on return (null if none/unavailable). */
+export function readPendingCheckout() {
+  try {
+    const raw = sessionStorage.getItem(PENDING_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Clear the stashed context once the return has been handled. */
+export function clearPendingCheckout() {
+  try {
+    sessionStorage.removeItem(PENDING_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 /**
  * Start a Mercado Pago subscription checkout by redirecting the browser to the
- * hosted checkout for the selected plan.
+ * hosted checkout for the selected plan. Before redirecting it stashes the
+ * chosen plan + return path (see PENDING_KEY) so the return handler can restore
+ * them — the plan's back_url is fixed in the dashboard and can't carry them.
  *
- * @param {{ planId: string }} params
+ * @param {{ planId: string, returnTo?: string }} params
  * @returns {Promise<{ ok: true } | { ok: false, reason: 'not_configured' }>}
  *   Resolves to not_configured (without redirecting) when the plan has no id
  *   yet; on success it redirects and the promise effectively never resolves.
  */
-export async function startSubscriptionCheckout({ planId } = {}) {
+export async function startSubscriptionCheckout({ planId, returnTo } = {}) {
   const url = buildCheckoutUrl(planId);
   if (!url) return { ok: false, reason: "not_configured" };
+  stashPendingCheckout({ planId, returnTo });
   window.location.assign(url);
   return { ok: true };
 }
