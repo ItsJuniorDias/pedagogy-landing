@@ -3,24 +3,27 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Pedagogy — conversion-focused landing page (React + Tailwind, built with Vite).",
+  "description": "Pedagogy — conversion-focused landing page (React + Tailwind, built with Vite) with the Happy Farm 3D game.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/fredoka": "^5.0.20",
     "@react-three/drei": "^9.114.0",
     "@react-three/fiber": "^8.17.10",
     "framer-motion": "^11.18.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-native-web": "^0.19.13",
     "react-router-dom": "^6.30.4",
     "three": "^0.169.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.20",
+    "jsdom": "^29.1.1",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.13",
     "vite": "^5.4.8"

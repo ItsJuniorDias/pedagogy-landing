@@ -1,5 +1,26 @@
+import { Link } from 'react-router-dom'
 import { Reveal } from '../../components/ui.jsx'
-import NeonPong from '../../components/app/NeonPong.jsx'
+
+const GAMES = [
+  {
+    to: '/app/games/farm',
+    emoji: '🌾',
+    title: 'Happy Farm',
+    blurb: 'A cozy 3D farm. Till, plant, water and harvest 15 crops, level up, and unlock a doghouse, barn & beehive.',
+    tag: 'New · 3D',
+    grad: 'from-mint to-mintd',
+    shadow: '#0E9B86',
+  },
+  {
+    to: '/app/games/pong',
+    emoji: '🏓',
+    title: 'Neon Pong',
+    blurb: 'Fast reflex practice — beat the CPU. Drag your paddle and curve the ball with a sideways swipe.',
+    tag: 'Arcade',
+    grad: 'from-grape to-graped',
+    shadow: '#5435C4',
+  },
+]
 
 export default function Games() {
   return (
@@ -9,21 +30,34 @@ export default function Games() {
           Games <span className="align-middle">🎮</span>
         </h1>
         <p className="mt-1.5 text-inksoft font-semibold">
-          Practice-as-play. First up: <span className="text-grape font-extrabold">Neon Pong</span> — beat the CPU. Drag to
-          move your paddle, and swipe sideways to curve the ball.
+          Practice-as-play. Pick a game to jump in — progress is saved as you go.
         </p>
       </Reveal>
 
-      <Reveal delay={60}>
-        {/* The game owns a dark, neon look — frame it in a rounded card and give
-            it a fixed height (NeonPong fills its parent). */}
-        <div
-          className="rounded-[28px] overflow-hidden ring-1 ring-black/5 shadow-[0_18px_44px_-28px_rgba(58,49,66,.7)]"
-          style={{ height: 'min(78vh, 680px)' }}
-        >
-          <NeonPong />
-        </div>
-      </Reveal>
+      <div className="grid sm:grid-cols-2 gap-4">
+        {GAMES.map((g, i) => (
+          <Reveal key={g.to} delay={i * 70}>
+            <Link
+              to={g.to}
+              className={`group block rounded-[26px] p-6 text-white bg-gradient-to-br ${g.grad} transition-transform hover:-translate-y-0.5`}
+              style={{ boxShadow: `0 10px 0 0 ${g.shadow}` }}
+            >
+              <div className="flex items-start justify-between">
+                <span className="text-5xl drop-shadow-sm">{g.emoji}</span>
+                <span className="text-[11px] font-display font-extrabold bg-white/20 rounded-full px-2.5 py-1">
+                  {g.tag}
+                </span>
+              </div>
+              <h2 className="mt-4 font-display font-extrabold text-2xl leading-tight">{g.title}</h2>
+              <p className="mt-1.5 text-white/90 font-semibold text-sm">{g.blurb}</p>
+              <span className="inline-flex items-center gap-1 mt-4 font-display font-extrabold">
+                Play
+                <span className="transition-transform group-hover:translate-x-1">→</span>
+              </span>
+            </Link>
+          </Reveal>
+        ))}
+      </div>
     </div>
   )
 }

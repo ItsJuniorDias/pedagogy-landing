@@ -13,14 +13,17 @@ import Path from './pages/app/Path.jsx'
 import LessonReader from './pages/app/LessonReader.jsx'
 import Paywall from './pages/app/Paywall.jsx'
 
-// Games pulls in three.js / R3F / drei — lazy-load it so that weight only
-// downloads when the player actually opens the Games tab.
-const Games = lazy(() => import('./pages/app/Games.jsx'))
+import Games from './pages/app/Games.jsx'
 
-function GamesFallback() {
+// The actual games pull in three.js — lazy-load each so that weight only
+// downloads when the player opens that specific game.
+const Pong = lazy(() => import('./pages/app/Pong.jsx'))
+const Farm = lazy(() => import('./pages/app/Farm.jsx'))
+
+function GameFallback({ emoji = '🎮' }) {
   return (
     <div className="grid place-items-center py-24">
-      <div className="text-5xl animate-bounce">🏓</div>
+      <div className="text-5xl animate-bounce">{emoji}</div>
     </div>
   )
 }
@@ -50,14 +53,25 @@ export default function App() {
         <Route path="path/:courseId" element={<LessonReader />} />
         <Route path="path/:courseId/:lessonId" element={<LessonReader />} />
         <Route path="paywall" element={<Paywall />} />
-        <Route
-          path="games"
-          element={
-            <Suspense fallback={<GamesFallback />}>
-              <Games />
-            </Suspense>
-          }
-        />
+        <Route path="games">
+          <Route index element={<Games />} />
+          <Route
+            path="farm"
+            element={
+              <Suspense fallback={<GameFallback emoji="🌾" />}>
+                <Farm />
+              </Suspense>
+            }
+          />
+          <Route
+            path="pong"
+            element={
+              <Suspense fallback={<GameFallback emoji="🏓" />}>
+                <Pong />
+              </Suspense>
+            }
+          />
+        </Route>
       </Route>
 
       {/* fallback */}

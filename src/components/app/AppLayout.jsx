@@ -22,7 +22,7 @@ const NAV = [
   { to: '/app', label: 'Home', Icon: HomeIcon, end: true, mobile: true },
   { to: '/app/stories', label: 'Stories', Icon: BookIcon, mobile: true },
   { to: '/app/path', label: 'Path', Icon: PathIcon, mobile: true },
-  { to: '/app/games', label: 'Games', Icon: GameIcon, mobile: false },
+  { to: '/app/games', label: 'Games', Icon: GameIcon, mobile: true },
   { to: '/app/profile', label: 'Profile', Icon: UserIcon, mobile: true },
 ]
 

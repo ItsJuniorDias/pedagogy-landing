@@ -13,6 +13,31 @@ npm run preview  # preview the production build locally
 
 Requires Node.js 18+.
 
+## 🌾 Happy Farm (jogo integrado)
+
+O jogo 3D **Happy Farm** (originalmente um app Expo/React Native) foi portado para
+rodar dentro desta landing, sem build separado. Após `npm install && npm run dev`:
+
+- Acesse a área do app → aba **Games** (`/app/games`)
+- Escolha **Happy Farm 🌾** → abre em `/app/games/farm`
+- **Neon Pong 🏓** continua disponível em `/app/games/pong`
+
+Como o port funciona (sem alterar o site original):
+- `react-native-web` resolve as primitivas RN (View, Text, Animated, etc.) via
+  alias no `vite.config.js`.
+- Shims locais em `src/games/_shims/` substituem os módulos Expo:
+  `expo-gl` (canvas WebGL2), `expo-three` (renderer), `expo-asset`, `expo-blur`,
+  fontes Fredoka e `@react-native-async-storage/async-storage` (→ `localStorage`,
+  o progresso é salvo automaticamente).
+- O código do jogo fica em `src/games/farm-game/` praticamente intacto; a única
+  edição foi adaptar o loop de render ao redimensionamento da janela (web).
+- A loja de moedas roda em modo simulado (`src/hooks/UseCoinStore.js`) — sem
+  pagamentos reais — e usa o portão parental em `src/shared/ParentalGate.jsx`.
+
+Créditos dos modelos 3D: Fox.glb — CC BY 4.0 (PixelMannen / tomkranis / Asobo
+Studio / scurest); Cow "Spot" — domínio público (Keenan Crane).
+
+
 ## Deploying
 
 `npm run build` outputs a static site to `dist/`. Drag that folder into Netlify, or deploy with Vercel / Cloudflare Pages / GitHub Pages — no server needed.
