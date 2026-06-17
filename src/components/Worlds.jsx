@@ -3,8 +3,10 @@ import { IMG } from '../assets.js'
 import { Reveal, Stagger, RevealItem, Bubble } from './ui.jsx'
 import { popIn, fromRight, spring, viewport as vp } from '../motion.js'
 import { WORLDS } from '../data.js'
+import { useGetApp } from '../hooks/useGetApp.js'
 
 export default function Worlds() {
+  const app = useGetApp()
   return (
     <section
       id="stories"
@@ -35,7 +37,7 @@ export default function Worlds() {
             ))}
           </Stagger>
           <motion.a
-            href="#download"
+            {...app}
             className="btn3d b-grape px-6 py-3.5 mt-8"
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.96 }}

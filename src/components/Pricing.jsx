@@ -2,9 +2,11 @@ import { motion } from 'framer-motion'
 import { Reveal, Stagger, RevealItem, Check } from './ui.jsx'
 import { fadeUp, popIn, spring, viewport as vp } from '../motion.js'
 import { PRICING } from '../data.js'
+import { useGetApp } from '../hooks/useGetApp.js'
 
 export default function Pricing() {
   const { monthly, annual } = PRICING
+  const app = useGetApp()
   return (
     <section id="pricing" className="relative py-20 sm:py-28">
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
@@ -41,7 +43,7 @@ export default function Pricing() {
                 ))}
               </ul>
               <motion.a
-                href="#download"
+                {...app}
                 className="btn3d b-white w-full px-6 py-3.5 mt-7 ring-1 ring-grape/15"
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
@@ -93,7 +95,7 @@ export default function Pricing() {
                 {annual.promo}
               </motion.div>
               <motion.a
-                href="#download"
+                {...app}
                 className="btn3d b-sun w-full px-6 py-3.5 mt-4"
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}

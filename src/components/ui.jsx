@@ -7,6 +7,7 @@ import {
   viewport as vp,
   EASE,
 } from '../motion.js'
+import { useGetApp } from '../hooks/useGetApp.js'
 
 /**
  * Reveal — fades children up into view on scroll (Framer Motion).
@@ -95,9 +96,10 @@ export function Floaty({ children, variant = 'bob', rotate = 0, delay = 0, class
 }
 
 export function AppleBadge({ className = '' }) {
+  const app = useGetApp()
   return (
     <a
-      href="#download"
+      {...app}
       className={'btn3d b-dark px-4 py-2.5 ' + className}
       aria-label="Download on the App Store"
     >
@@ -113,9 +115,10 @@ export function AppleBadge({ className = '' }) {
 }
 
 export function GoogleBadge({ className = '' }) {
+  const app = useGetApp()
   return (
     <a
-      href="#download"
+      {...app}
       className={'btn3d b-dark px-4 py-2.5 ' + className}
       aria-label="Get it on Google Play"
     >

@@ -3,10 +3,12 @@ import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion
 import { IMG } from '../assets.js'
 import { AppleBadge, GoogleBadge, Stars, Bubble } from './ui.jsx'
 import { container, fadeUp, spring } from '../motion.js'
+import { useGetApp } from '../hooks/useGetApp.js'
 
 export default function Hero() {
   const ref = useRef(null)
   const reduce = useReducedMotion()
+  const app = useGetApp()
 
   // Scroll-linked parallax: layers drift at different speeds as the hero exits.
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] })
@@ -73,7 +75,7 @@ export default function Hero() {
             className="mt-8 flex flex-wrap items-center justify-center lg:justify-start gap-3"
           >
             <motion.a
-              href="#pricing"
+              {...app}
               className="btn3d b-pink px-7 py-4 text-lg"
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.96 }}
