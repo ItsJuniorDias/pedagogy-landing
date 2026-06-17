@@ -72,6 +72,17 @@ export const s = StyleSheet.create({
   dayPillTxt: { fontSize: 10, fontFamily: FF, color: "#BBF7D0" },
 
   chips: { flexDirection: "row", gap: 6, alignItems: "center" },
+  fsBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: P.greenDeep,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.38)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  fsBtnTxt: { color: P.white, fontSize: 17, lineHeight: 20 },
   goldChip: {
     flexDirection: "row",
     alignItems: "center",

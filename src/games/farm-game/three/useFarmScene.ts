@@ -20,6 +20,11 @@ import { buildStructure } from "./structures";
 
 // ─── Câmera: base fixa + pan no chão ─────────────────────────────────────────
 const VIEW = 4.6; // meia-altura do frustum ortográfico
+// Deslocamento vertical do enquadramento (em unidades de mundo). O rodapé de
+// ferramentas flutua sobre a parte de baixo do canvas, então levantamos a cena
+// para que o campo fique centralizado na faixa visível (acima do rodapé), e não
+// "afundado" atrás dele. top = VIEW - LIFT / bottom = -VIEW - LIFT → sobe na tela.
+const VERT_LIFT = 1.0;
 const CAM_POS = new THREE.Vector3(8, 10, 8);
 const CAM_TARGET = new THREE.Vector3(0, 0, 0);
 const SQ = Math.SQRT1_2;
@@ -231,8 +236,8 @@ export function useFarmScene({
       r.camera = new THREE.OrthographicCamera(
         -VIEW * aspect,
         VIEW * aspect,
-        VIEW,
-        -VIEW,
+        VIEW - VERT_LIFT,
+        -VIEW - VERT_LIFT,
         0.1,
         100,
       );
@@ -310,8 +315,8 @@ export function useFarmScene({
             const asp = cw / ch;
             r.camera.left = -VIEW * asp;
             r.camera.right = VIEW * asp;
-            r.camera.top = VIEW;
-            r.camera.bottom = -VIEW;
+            r.camera.top = VIEW - VERT_LIFT;
+            r.camera.bottom = -VIEW - VERT_LIFT;
             r.camera.updateProjectionMatrix();
             applyPan(r);
           }

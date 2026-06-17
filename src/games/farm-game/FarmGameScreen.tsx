@@ -51,7 +51,13 @@ import type { FloatingLabel, ToolId } from "./types";
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-function FarmGameInner() {
+function FarmGameInner({
+  isFullscreen,
+  onToggleFullscreen,
+}: {
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
+}) {
   const [fontsLoaded] = useFonts({ FredokaOne_400Regular });
   const insets = useSafeAreaInsets();
 
@@ -316,6 +322,18 @@ function FarmGameInner() {
           </View>
 
           <View style={s.chips}>
+            {onToggleFullscreen && (
+              <TouchableOpacity
+                onPress={onToggleFullscreen}
+                activeOpacity={0.8}
+                style={s.fsBtn}
+                accessibilityLabel={
+                  isFullscreen ? "Sair da tela cheia" : "Tela cheia"
+                }
+              >
+                <Text style={s.fsBtnTxt}>{isFullscreen ? "⤡" : "⛶"}</Text>
+              </TouchableOpacity>
+            )}
             <GoldCounter
               gold={state.gold}
               onPress={() => setMarketVisible(true)}
@@ -530,10 +548,19 @@ function FarmGameInner() {
   );
 }
 
-export default function FarmGame3D() {
+export default function FarmGame3D({
+  isFullscreen,
+  onToggleFullscreen,
+}: {
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
+}) {
   return (
     <SafeAreaProvider>
-      <FarmGameInner />
+      <FarmGameInner
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={onToggleFullscreen}
+      />
     </SafeAreaProvider>
   );
 }

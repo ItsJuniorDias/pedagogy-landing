@@ -128,48 +128,7 @@ export default function Farm() {
             : { height: fs ? '100vh' : 'min(82vh, 760px)' }
         }
       >
-        <FarmGameScreen />
-
-        {/* Fullscreen toggle — floats over the game HUD. */}
-        <button
-          type="button"
-          onClick={toggleFullscreen}
-          aria-label={fs ? 'Sair da tela cheia' : 'Tela cheia'}
-          title={fs ? 'Sair da tela cheia (Esc)' : 'Tela cheia'}
-          style={{
-            position: 'absolute',
-            top: 'max(12px, env(safe-area-inset-top))',
-            right: 'max(12px, env(safe-area-inset-right))',
-            zIndex: 50,
-            width: 42,
-            height: 42,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: 12,
-            border: 'none',
-            cursor: 'pointer',
-            color: '#fff',
-            background: 'rgba(17,20,38,.55)',
-            backdropFilter: 'blur(6px)',
-            WebkitBackdropFilter: 'blur(6px)',
-            boxShadow: '0 4px 14px -6px rgba(0,0,0,.6)',
-          }}
-        >
-          {fs ? (
-            // exit / contract
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 3v3a3 3 0 0 1-3 3H3M21 9h-3a3 3 0 0 1-3-3V3M3 15h3a3 3 0 0 1 3 3v3M15 21v-3a3 3 0 0 1 3-3h3" />
-            </svg>
-          ) : (
-            // enter / expand
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 9V5a2 2 0 0 1 2-2h4M21 9V5a2 2 0 0 0-2-2h-4M3 15v4a2 2 0 0 0 2 2h4M21 15v4a2 2 0 0 1-2 2h-4" />
-            </svg>
-          )}
-        </button>
+        <FarmGameScreen isFullscreen={fs} onToggleFullscreen={toggleFullscreen} />
       </div>
     </div>
   )
