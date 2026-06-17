@@ -1,4 +1,11 @@
-import { motion } from "framer-motion";
+import {
+  motion,
+  useMotionValue,
+  useTransform,
+  useReducedMotion,
+  animate,
+} from "framer-motion";
+import { useEffect, useState } from "react";
 import { resolveColor, WEEKDAYS } from "../../data.app.js";
 import { Reveal } from "../ui.jsx";
 import { spring } from "../../motion.js";
@@ -40,17 +47,42 @@ export function StatTile({ emoji, value, label, color = "grape", delay = 0 }) {
   );
 }
 
+/**
+ * Counts 0 → value once on mount. Honors the OS "reduce motion" setting
+ * (the global <MotionConfig reducedMotion="user"> can't reach this imperative
+ * animation, so we gate it here too).
+ */
+function useCountUp(value, { duration = 0.9 } = {}) {
+  const reduce = useReducedMotion();
+  const mv = useMotionValue(0);
+  const rounded = useTransform(mv, (v) => Math.round(v));
+
+  useEffect(() => {
+    if (reduce) {
+      mv.set(value);
+      return;
+    }
+    const controls = animate(mv, value, { duration, ease: "easeOut" });
+    return controls.stop;
+  }, [value, reduce, mv, duration]);
+
+  return rounded;
+}
+
 /** Weekly reading-minutes mini bar chart. */
 export function WeekBars({ week = [], color = "grape", total }) {
   const c = resolveColor(color);
+  const reduce = useReducedMotion();
 
   const max = Math.max(1, ...week);
-
   const today = (new Date().getDay() + 6) % 7; // Mon=0 … Sun=6
 
   // Prefer the precise weekly total (raw minutes, rounded once) when provided;
   // fall back to summing the rounded bars so the component still works alone.
   const totalMin = total != null ? total : week.reduce((a, b) => a + b, 0);
+  const animatedTotal = useCountUp(totalMin);
+
+  const [hover, setHover] = useState(null);
 
   return (
     <div className="rounded-3xl bg-white p-5 ring-1 ring-black/5 shadow-[0_14px_34px_-26px_rgba(58,49,66,.6)] h-full">
@@ -59,25 +91,55 @@ export function WeekBars({ week = [], color = "grape", total }) {
           This week
         </h3>
         <span className="text-[13px] font-bold text-inksoft">
-          {totalMin} min read
+          <motion.span>{animatedTotal}</motion.span> min read
         </span>
       </div>
 
-      <div className="mt-5 flex items-end justify-between gap-2 h-32">
+      {/* Bars cascade in (stagger). Heights animate even though the parent
+          <Reveal> handles the card's fade — different properties, no conflict. */}
+      <motion.div
+        className="mt-5 flex items-end justify-between gap-2 h-32"
+        variants={{
+          hidden: {},
+          show: { transition: { staggerChildren: 0.06, delayChildren: 0.1 } },
+        }}
+        initial={reduce ? false : "hidden"}
+        animate="show"
+      >
         {week.map((v, i) => {
-          const h = Math.round((v / max) * 100);
-
+          const h = Math.max(Math.round((v / max) * 100), 6);
           const isToday = i === today;
+          const isHover = hover === i;
 
           return (
-            <div key={i} className="flex flex-col items-center gap-2 flex-1 h-full">
+            <div
+              key={i}
+              className="flex flex-col items-center gap-2 flex-1 h-full"
+              onMouseEnter={() => setHover(i)}
+              onMouseLeave={() => setHover(null)}
+            >
               <div className="relative w-full flex-1 flex items-end">
+                {/* minute value, revealed on hover */}
+                <motion.span
+                  className="absolute left-1/2 -translate-x-1/2 -top-1 text-[10px] font-extrabold text-ink bg-cream px-1.5 py-0.5 rounded-full ring-1 ring-black/5 pointer-events-none whitespace-nowrap"
+                  initial={false}
+                  animate={{ opacity: isHover ? 1 : 0, y: isHover ? 0 : 4 }}
+                  transition={spring.soft}
+                >
+                  {Math.round(v)}m
+                </motion.span>
+
                 <motion.div
-                  className="w-full rounded-t-xl rounded-b-md"
+                  className="w-full rounded-t-xl rounded-b-md origin-bottom"
                   style={{ background: isToday ? c.ring : c.bg }}
-                  initial={{ height: 0 }}
-                  animate={{ height: `${Math.max(h, 6)}%` }}
-                  transition={{ ...spring.soft, delay: 0.04 * i }}
+                  variants={{
+                    hidden: { height: "0%" },
+                    show: { height: `${h}%` },
+                  }}
+                  transition={spring.soft}
+                  whileHover={
+                    reduce ? undefined : { scaleY: 1.04, filter: "brightness(1.05)" }
+                  }
                 />
               </div>
 
@@ -92,7 +154,7 @@ export function WeekBars({ week = [], color = "grape", total }) {
             </div>
           );
         })}
-      </div>
+      </motion.div>
     </div>
   );
 }
