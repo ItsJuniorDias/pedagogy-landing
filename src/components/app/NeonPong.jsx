@@ -95,7 +95,7 @@ const DIFFS = {
     aiSpeed: 2.2,
     ballSpeed: 3.2,
     aiError: 0.6,
-    aiCatch: 0.18,
+    aiCatch: 0.05,
   },
   normal: {
     id: "normal",
@@ -105,7 +105,7 @@ const DIFFS = {
     aiSpeed: 3.2,
     ballSpeed: 4.2,
     aiError: 0.34,
-    aiCatch: 0.28,
+    aiCatch: 0.1,
   },
   hard: {
     id: "hard",
@@ -115,7 +115,7 @@ const DIFFS = {
     aiSpeed: 4.3,
     ballSpeed: 5.2,
     aiError: 0.18,
-    aiCatch: 0.4,
+    aiCatch: 0.15,
   },
 };
 const DIFF_LIST = [DIFFS.easy, DIFFS.normal, DIFFS.hard];
@@ -437,14 +437,20 @@ function Scene({
 
       const tryPaddle = (paddle, dirSign, catchAssist) => {
         if (Math.sign(v.z) !== dirSign) return;
+
         const plane = dirSign * (PADDLE.z - BALL_R - PADDLE.d / 2);
+
         const crossed =
           dirSign === 1
             ? prevZ <= plane && nz >= plane
             : prevZ >= plane && nz <= plane;
+
         if (!crossed) return;
+
         const tFrac = (plane - prevZ) / (nz - prevZ || 1e-6);
+
         const hitX = ball.position.x + v.x * dt * tFrac;
+
         if (
           Math.abs(hitX - paddle.position.x) >
           PADDLE.halfW + BALL_R + catchAssist
@@ -479,8 +485,11 @@ function Scene({
       ball.position.x = nx;
       ball.position.z = nz;
 
-      if (nz > TABLE.halfL + 1.1) onPointRef.current("cpu");
-      else if (nz < -(TABLE.halfL + 1.1)) onPointRef.current("player");
+      if (nz > TABLE.halfL + 1.1) {
+        onPointRef.current("cpu");
+      } else if (nz < -(TABLE.halfL + 1.1)) {
+        onPointRef.current("player");
+      }
     }
 
     // racket "twang" on hit
