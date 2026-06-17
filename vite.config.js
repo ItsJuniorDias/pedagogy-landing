@@ -12,6 +12,15 @@ export default defineConfig({
   assetsInclude: ['**/*.glb', '**/*.gltf'],
   define: {
     __DEV__: false,
+    // The ported Neon Pong network layer (src/games/pong-game/net/config.ts)
+    // reads `process.env.EXPO_PUBLIC_PONG_SERVER` (an Expo convention). In the
+    // browser `process` doesn't exist, so we inline the value at build time:
+    // set EXPO_PUBLIC_PONG_SERVER (or VITE_PONG_SERVER) to point elsewhere,
+    // otherwise it's an empty string and config.ts falls back to the hosted
+    // Render server (wss://pedagogy-923f.onrender.com).
+    'process.env.EXPO_PUBLIC_PONG_SERVER': JSON.stringify(
+      process.env.EXPO_PUBLIC_PONG_SERVER || process.env.VITE_PONG_SERVER || '',
+    ),
     global: 'globalThis',
   },
   resolve: {
