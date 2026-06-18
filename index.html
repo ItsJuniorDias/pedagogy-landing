@@ -29,14 +29,6 @@
       fbq("init", "967920369353096");
       fbq("track", "PageView");
     </script>
-    <noscript
-      ><img
-        height="1"
-        width="1"
-        style="display: none"
-        src="https://www.facebook.com/tr?id=967920369353096&ev=PageView&noscript=1"
-    /></noscript>
-    <!-- DO NOT MODIFY -->
     <!-- End Facebook Pixel Code -->
 
     <meta charset="UTF-8" />
@@ -68,6 +60,18 @@
     />
   </head>
   <body>
+    <!-- Facebook Pixel (noscript fallback) -->
+    <noscript>
+      <img
+        height="1"
+        width="1"
+        style="display: none"
+        src="https://www.facebook.com/tr?id=967920369353096&ev=PageView&noscript=1"
+        alt=""
+      />
+    </noscript>
+    <!-- End Facebook Pixel (noscript fallback) -->
+
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
