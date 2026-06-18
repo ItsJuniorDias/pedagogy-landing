@@ -24,6 +24,7 @@ import { MultiplayerPongGame } from "./MultiplayerPongGame";
 import { useLobbySocket } from "./net";
 import { PongGameInner } from "./PingPongGame";
 import { FF, NEON } from "./theme";
+import { SoundButton, useGameAudio } from "../_audio";
 
 type Mode = "menu" | "solo" | "mp";
 
@@ -103,6 +104,28 @@ const SoloBackButton: React.FC<{ onPress: () => void }> = ({ onPress }) => {
   );
 };
 
+/**
+ * Liga a trilha synthwave enquanto o NEON PONG estiver montado e mostra o botão
+ * de mudo (canto superior direito). Fica acima de todos os modos (menu/solo/mp).
+ */
+const PongSoundToggle: React.FC = () => {
+  const insets = useSafeAreaInsets();
+  const { muted, toggle } = useGameAudio("pong");
+  return (
+    <SoundButton
+      muted={muted}
+      onToggle={toggle}
+      tint={NEON.cyan}
+      style={{
+        position: "absolute",
+        right: 14,
+        top: insets.top + 12,
+        zIndex: 40,
+      }}
+    />
+  );
+};
+
 export default function PongHub() {
   const [fontsLoaded] = useFonts({ FredokaOne_400Regular });
   if (!fontsLoaded) {
@@ -111,7 +134,10 @@ export default function PongHub() {
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <HubInner />
+      <View style={{ flex: 1 }}>
+        <HubInner />
+        <PongSoundToggle />
+      </View>
     </SafeAreaProvider>
   );
 }

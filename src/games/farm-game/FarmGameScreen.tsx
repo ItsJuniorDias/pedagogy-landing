@@ -48,6 +48,7 @@ import {
 } from "./three/useFarmScene";
 import { s } from "./styles";
 import type { FloatingLabel, ToolId } from "./types";
+import { SoundButton, sfx, useGameAudio } from "../_audio";
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -64,6 +65,9 @@ function FarmGameInner({
   // ── Game state (reducer + persistence + tick) ───────────────────────────────
   const { state, dispatch, stateRef, hydrated } = useFarmGame();
 
+  // ── Áudio: trilha pastoral + estado de mudo p/ o botão da HUD ───────────────
+  const { muted, toggle: toggleMute } = useGameAudio("farm");
+
   const [shopVisible, setShopVisible] = useState(false);
   const [marketVisible, setMarketVisible] = useState(false);
   const [dayModalVisible, setDayModalVisible] = useState(false);
@@ -78,6 +82,7 @@ function FarmGameInner({
     onCoinsGranted: (coins) => {
       dispatch({ type: "BUY_COINS", amount: coins });
       Vibration.vibrate([0, 30, 40, 30]);
+      sfx.coin();
       setMarketVisible(false);
     },
   });
@@ -135,6 +140,7 @@ function FarmGameInner({
         }),
       ]).start(() => setShowLevelUp(false));
       Vibration.vibrate([0, 40, 60, 40]);
+      sfx.levelUp();
     }
     prevLevel.current = state.level;
   }, [state.level, hydrated]);
@@ -190,6 +196,7 @@ function FarmGameInner({
         if (tile.state !== "empty") return;
         dispatch({ type: "TILL", id: tileId });
         Vibration.vibrate(30);
+        sfx.till();
         return;
       }
       if (tool === "seed") {
@@ -197,27 +204,32 @@ function FarmGameInner({
         const crop = CROPS[st.selectedCrop];
         if (st.level < crop.minLevel) {
           spawnLabel(tileId, `🔒 Reach level ${crop.minLevel}`, "#EF4444");
+          sfx.blocked();
           return;
         }
         if (st.gold < crop.seedCost) {
           spawnLabel(tileId, "❌ No coins!", "#EF4444");
+          sfx.error();
           setMarketVisible(true); // 💸 out of coins → show the market
           return;
         }
         dispatch({ type: "PLANT", id: tileId });
         spawnLabel(tileId, `-${crop.seedCost}💰`, "#F97316");
         Vibration.vibrate(20);
+        sfx.plant();
         return;
       }
       if (tool === "water") {
         if (tile.state !== "planted" && tile.state !== "growing") return;
         if (tile.watered) {
           spawnLabel(tileId, "Already watered!", "#94A3B8");
+          sfx.blocked();
           return;
         }
         dispatch({ type: "WATER", id: tileId });
         spawnLabel(tileId, "💧 Watered!", "#3B82F6");
         Vibration.vibrate(15);
+        sfx.water();
         return;
       }
       if (tool === "harvest") {
@@ -231,6 +243,8 @@ function FarmGameInner({
           xp,
         });
         spawnLabel(tileId, `+${gold}💰`, "#22C55E");
+        sfx.harvest();
+        sfx.coin();
         if (doubled) {
           setTimeout(() => spawnLabel(tileId, "✨ Double harvest!", "#FBBF24"), 110);
         }
@@ -322,6 +336,12 @@ function FarmGameInner({
           </View>
 
           <View style={s.chips}>
+            <SoundButton
+              muted={muted}
+              onToggle={toggleMute}
+              size={34}
+              tint="rgba(255,255,255,0.5)"
+            />
             {onToggleFullscreen && (
               <TouchableOpacity
                 onPress={onToggleFullscreen}
@@ -479,9 +499,10 @@ function FarmGameInner({
                       s.toolBtn,
                       active && { backgroundColor: tool.color },
                     ]}
-                    onPress={() =>
-                      dispatch({ type: "SELECT_TOOL", tool: tool.id })
-                    }
+                    onPress={() => {
+                      sfx.tap();
+                      dispatch({ type: "SELECT_TOOL", tool: tool.id });
+                    }}
                     activeOpacity={0.8}
                   >
                     {count > 0 && (
@@ -514,6 +535,7 @@ function FarmGameInner({
         onBuyStructure={(id) => {
           dispatch({ type: "BUY_STRUCTURE", id });
           Vibration.vibrate([0, 30, 40, 30]);
+          sfx.build();
         }}
         onOpenMarket={() => {
           setShopVisible(false);
@@ -541,6 +563,7 @@ function FarmGameInner({
         totalHarvested={state.totalHarvested}
         onClose={() => {
           dispatch({ type: "NEXT_DAY" });
+          sfx.nextDay();
           setDayModalVisible(false);
         }}
       />

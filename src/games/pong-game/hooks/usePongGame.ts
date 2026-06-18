@@ -28,6 +28,7 @@ import { buildArena, buildRacket, buildTable, neon } from "../scene";
 import type { MatchResult } from "../storage";
 import { C3D, NEON } from "../theme";
 import type { DiffId, FloatingLabel, Phase, SceneRefs } from "../types";
+import { sfx } from "../../_audio/sfx";
 
 export interface UsePongGameOptions {
   /**
@@ -230,12 +231,16 @@ export function usePongGame(options: UsePongGameOptions = {}) {
         isPlayer ? NEON.cyan : NEON.magenta,
       );
       Vibration.vibrate(isPlayer ? [0, 30, 50, 30] : 60);
+      if (isPlayer) sfx.scorePlayer();
+      else sfx.scoreCpu();
 
       if (ns.p >= WIN_SCORE || ns.c >= WIN_SCORE) {
         setPhaseBoth("over");
         resetBall();
         setOverVisible(true);
         Vibration.vibrate([0, 60, 80, 60, 80, 120]);
+        if (ns.p >= WIN_SCORE) sfx.win();
+        else sfx.lose();
 
         // ── Marcação de ponto depois da partida ──
         // Fecha o resultado e avisa quem estiver ouvindo (ranking persistente).
@@ -271,10 +276,13 @@ export function usePongGame(options: UsePongGameOptions = {}) {
         setBestRally(r.rally);
       }
       setSpeedMul(r.speedMul);
+      // Som da rebatida: timbre/altura mudam por quem bateu e pela força do corte
+      sfx.paddle(isPlayer, Math.min(1, spinMag / Math.max(SPIN.max, 1e-6)));
       // Corte forte do jogador: aviso + vibração diferenciada
       if (isPlayer && spinMag >= SPIN.labelAt) {
         spawnLabel("🌀 EFFECT!", NEON.cyan);
         Vibration.vibrate([0, 14, 22, 14]);
+        sfx.spin();
       } else {
         Vibration.vibrate(10);
       }
@@ -386,6 +394,7 @@ export function usePongGame(options: UsePongGameOptions = {}) {
         v.x = (Math.random() * 2 - 1) * base * 0.32;
         r.phase = "play";
         setPhase("play");
+        sfx.serve();
       }
 
       if (r.phase === "play") {
@@ -471,10 +480,12 @@ export function usePongGame(options: UsePongGameOptions = {}) {
           nx = maxX - (nx - maxX);
           v.x = -Math.abs(v.x);
           r.spin *= 0.5;
+          sfx.wall();
         } else if (nx < -maxX) {
           nx = -maxX + (-maxX - nx);
           v.x = Math.abs(v.x);
           r.spin *= 0.5;
+          sfx.wall();
         }
 
         // Colisão com raquete (checa o cruzamento do plano p/ não atravessar).
@@ -593,11 +604,24 @@ export function usePongGame(options: UsePongGameOptions = {}) {
   );
 
   // ── Cleanup ────────────────────────────────────────────────────────────────
-
+  // Em DEV, o React.StrictMode monta → desmonta → remonta cada componente. A
+  // limpeza ingênua cancelava o requestAnimationFrame na desmontagem "falsa" e
+  // o shim do GLView não recriava o contexto na remontagem → o loop morria e o
+  // jogo ficava preso em "GET READY…". Aqui adiamos o teardown: se a remontagem
+  // acontecer logo em seguida (StrictMode), o setup cancela o teardown pendente
+  // e o loop sobrevive. Numa desmontagem real, nada cancela e o teardown roda.
+  const teardownTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
+    if (teardownTimer.current) {
+      clearTimeout(teardownTimer.current);
+      teardownTimer.current = null;
+    }
     return () => {
-      cancelAnimationFrame(refs.current.animFrame);
-      refs.current.renderer?.dispose?.();
+      teardownTimer.current = setTimeout(() => {
+        cancelAnimationFrame(refs.current.animFrame);
+        refs.current.renderer?.dispose?.();
+        teardownTimer.current = null;
+      }, 150);
     };
   }, []);
 

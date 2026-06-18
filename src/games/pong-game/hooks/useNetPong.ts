@@ -26,6 +26,7 @@ import { DEFAULT_MMR } from "../storage";
 import type { MatchResult } from "../storage";
 import { C3D, NEON } from "../theme";
 import type { FloatingLabel, Phase } from "../types";
+import { sfx } from "../../_audio/sfx";
 
 const BALL_SPEED = DIFFS.normal.ballSpeed; // velocidade base fixa no multiplayer
 
@@ -220,6 +221,8 @@ export function useNetPong({ net, selfMMR, opponent, onMatchEnd }: UseNetPongOpt
 
       spawnLabel(meScored ? "🎉 POINT!" : "😤 -1", meScored ? NEON.cyan : NEON.magenta);
       Vibration.vibrate(meScored ? [0, 30, 50, 30] : 60);
+      if (meScored) sfx.scorePlayer();
+      else sfx.scoreCpu();
       net.sendEvent({ kind: "point", side: who });
 
       if (ns.p >= WIN_SCORE || ns.c >= WIN_SCORE) {
@@ -227,6 +230,8 @@ export function useNetPong({ net, selfMMR, opponent, onMatchEnd }: UseNetPongOpt
         resetBall();
         setOverVisible(true);
         Vibration.vibrate([0, 60, 80, 60, 80, 120]);
+        if (ns.p >= WIN_SCORE) sfx.win();
+        else sfx.lose();
         net.sendEvent({ kind: "over", winner: ns.p >= WIN_SCORE ? "host" : "guest" });
       } else {
         // saque vai em direção a quem perdeu o ponto
@@ -252,12 +257,16 @@ export function useNetPong({ net, selfMMR, opponent, onMatchEnd }: UseNetPongOpt
       }
       setSpeedMul(r.speedMul);
       net.sendEvent({ kind: "hit", side });
-      if (side === "host") Vibration.vibrate(10);
+      if (side === "host") {
+        Vibration.vibrate(10);
+        sfx.paddle(true, Math.min(1, spinMag / Math.max(SPIN.max, 1e-6)));
+      }
       if (spinMag >= SPIN.labelAt) {
         net.sendEvent({ kind: "effect", side });
         if (side === "host") {
           spawnLabel("🌀 EFFECT!", NEON.cyan);
           Vibration.vibrate([0, 14, 22, 14]);
+          sfx.spin();
         }
       }
     },
@@ -315,9 +324,17 @@ export function useNetPong({ net, selfMMR, opponent, onMatchEnd }: UseNetPongOpt
           // mostra "EFFECT!" só para quem deu o corte
           const mine = isHostRef.current ? e.side === "host" : e.side === "guest";
           if (mine && isHostRef.current) return; // host já mostrou localmente
-          if (mine) spawnLabel("🌀 EFFECT!", NEON.cyan);
+          if (mine) {
+            spawnLabel("🌀 EFFECT!", NEON.cyan);
+            sfx.spin();
+          }
         } else if (e.kind === "hit") {
           const mine = isHostRef.current ? e.side === "host" : e.side === "guest";
+          // O guest não roda a física, então toda batida (sua e do oponente)
+          // chega por evento — é a única fonte de som de rebatida pra ele.
+          // O host só ouve por aqui as batidas do oponente (as suas tocam local).
+          if (!isHostRef.current) sfx.paddle(mine);
+          else if (!mine) sfx.paddle(false);
           if (mine && !isHostRef.current) Vibration.vibrate(10);
         } else if (e.kind === "point") {
           if (!isHostRef.current) {
@@ -325,11 +342,16 @@ export function useNetPong({ net, selfMMR, opponent, onMatchEnd }: UseNetPongOpt
             const meScored = e.side === "guest";
             spawnLabel(meScored ? "🎉 POINT!" : "😤 -1", meScored ? NEON.cyan : NEON.magenta);
             Vibration.vibrate(meScored ? [0, 30, 50, 30] : 60);
+            if (meScored) sfx.scorePlayer();
+            else sfx.scoreCpu();
           }
         } else if (e.kind === "over") {
           if (!isHostRef.current) {
             setOverVisible(true);
             Vibration.vibrate([0, 60, 80, 60, 80, 120]);
+            // winner é no frame do host: "guest" = o guest (eu) venci
+            if (e.winner === "guest") sfx.win();
+            else sfx.lose();
           }
         }
       },

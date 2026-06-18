@@ -505,11 +505,21 @@ export function useFarmScene({
   }, [refs]);
 
   // ── Cleanup ──────────────────────────────────────────────────────────────────
-
+  // Teardown adiado para sobreviver ao ciclo montar→desmontar→remontar do
+  // React.StrictMode em DEV (ver nota equivalente no usePongGame): se a
+  // remontagem vier logo a seguir, o setup cancela o teardown e o loop continua.
+  const teardownTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
+    if (teardownTimer.current) {
+      clearTimeout(teardownTimer.current);
+      teardownTimer.current = null;
+    }
     return () => {
-      cancelAnimationFrame(refs.current.animFrame);
-      refs.current.renderer?.dispose?.();
+      teardownTimer.current = setTimeout(() => {
+        cancelAnimationFrame(refs.current.animFrame);
+        refs.current.renderer?.dispose?.();
+        teardownTimer.current = null;
+      }, 150);
     };
   }, [refs]);
 
