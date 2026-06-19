@@ -1,9 +1,10 @@
 import { motion, useScroll, useTransform } from 'framer-motion'
-import { IMG } from '../assets.js'
+import { IMG, OWL_EYES } from '../assets.js'
 import { AppleBadge, GoogleBadge, Stars, Bubble } from './ui.jsx'
 import { container, fadeUp, spring } from '../motion.js'
 import { useGetApp } from '../hooks/useGetApp.js'
 import { usePopupParallax } from '../hooks/usePopupParallax.js'
+import { useOwlEyes } from '../hooks/useOwlEyes.js'
 
 // Sum helper for combining a scroll offset and a pointer offset on one axis.
 const add = ([a, b]) => a + b
@@ -13,6 +14,9 @@ export default function Hero() {
 
   // Pointer / gyro tilt for the pop-up scene. px,py ≈ -0.5..0.5 from center.
   const { ref, px, py, reduce } = usePopupParallax()
+
+  // Cursor-tracking eyes: the owl's irises lean toward the pointer (see hook).
+  const eyes = useOwlEyes({ left: OWL_EYES.left, right: OWL_EYES.right, maxTravel: 0.018 })
 
   // Scroll-linked parallax: layers drift at different speeds as the hero exits.
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] })
@@ -151,7 +155,10 @@ export default function Hero() {
               </motion.div>
             </div>
 
-            {/* owl (front plane): depth → look-at lean + scroll + entrance → idle float */}
+            {/* owl (front plane): depth → look-at lean + scroll + entrance → idle float.
+                The owl is split into a base (eyes painted to clean white) plus two
+                iris sprites cut from the art; useOwlEyes nudges the irises toward
+                the cursor so the owl appears to watch the pointer. */}
             <div className="relative z-[1]" style={tz(28)}>
               <motion.div
                 style={reduce ? { y: owlScrollY } : { x: owlLeanX, y: owlY }}
@@ -159,13 +166,50 @@ export default function Hero() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ ...spring.soft, delay: 0.2 }}
               >
-                <motion.img
-                  src={IMG.owl}
-                  alt="Pedagogy the owl reading a storybook"
-                  className="w-[88%] mx-auto drop-shadow-[0_20px_30px_rgba(58,49,66,.25)]"
+                {/* idle float — base + eyes bob together as one unit */}
+                <motion.div
+                  ref={eyes.wrapRef}
+                  className="relative w-[88%] mx-auto"
                   animate={{ y: [0, -12, 0], rotate: [-1.5, 1.5, -1.5] }}
                   transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-                />
+                >
+                  <img
+                    src={IMG.owlBase}
+                    alt="Pedagogy the owl reading a storybook"
+                    className="w-full block select-none drop-shadow-[0_20px_30px_rgba(58,49,66,.25)]"
+                    draggable={false}
+                  />
+
+                  {/* iris sprites — positioned over each eye, moved by useOwlEyes */}
+                  <img
+                    ref={eyes.leftRef}
+                    src={IMG.owlIrisLeft}
+                    alt=""
+                    aria-hidden="true"
+                    draggable={false}
+                    className="absolute select-none will-change-transform"
+                    style={{
+                      left: `${OWL_EYES.left.fx * 100}%`,
+                      top: `${OWL_EYES.left.fy * 100}%`,
+                      width: `${OWL_EYES.spriteFrac * 100}%`,
+                      transform: 'translate(-50%, -50%)',
+                    }}
+                  />
+                  <img
+                    ref={eyes.rightRef}
+                    src={IMG.owlIrisRight}
+                    alt=""
+                    aria-hidden="true"
+                    draggable={false}
+                    className="absolute select-none will-change-transform"
+                    style={{
+                      left: `${OWL_EYES.right.fx * 100}%`,
+                      top: `${OWL_EYES.right.fy * 100}%`,
+                      width: `${OWL_EYES.spriteFrac * 100}%`,
+                      transform: 'translate(-50%, -50%)',
+                    }}
+                  />
+                </motion.div>
               </motion.div>
             </div>
 
