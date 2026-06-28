@@ -8,6 +8,7 @@ import ParentsLove from '../components/ParentsLove.jsx'
 import Pricing from '../components/Pricing.jsx'
 import FinalCTA from '../components/FinalCTA.jsx'
 import Footer from '../components/Footer.jsx'
+import WhatsAppButton from '../components/WhatsAppButton.jsx'
 
 export default function Landing() {
   return (
@@ -22,6 +23,7 @@ export default function Landing() {
       <Pricing />
       <FinalCTA />
       <Footer />
+      <WhatsAppButton />
     </main>
   )
 }

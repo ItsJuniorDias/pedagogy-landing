@@ -86,6 +86,14 @@ h4,
 .b-dark:active {
   box-shadow: 0 1px 0 0 #221c29;
 }
+.b-whats {
+  background: #25d366;
+  color: #fff;
+  box-shadow: 0 6px 0 0 #1aa64f;
+}
+.b-whats:active {
+  box-shadow: 0 2px 0 0 #1aa64f;
+}
 .btn3d:hover {
   filter: brightness(1.04);
 }
