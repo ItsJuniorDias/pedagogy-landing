@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { IMG } from '../../assets.js'
-import { Bubble, Stars } from '../ui.jsx'
+import { Bubble } from '../ui.jsx'
 import { spring } from '../../motion.js'
 
 /**
@@ -44,8 +44,8 @@ export default function AuthShell({ title, subtitle, children, footer }) {
               Pick up right where your little reader left off — lessons, stories, and games, all in one happy place.
             </p>
             <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-white/80 ring-1 ring-grape/15 px-4 py-2 shadow-sm">
-              <Stars />
-              <span className="font-bold text-ink text-sm">Loved by 50,000+ families</span>
+              <span aria-hidden="true">🌍</span>
+              <span className="font-bold text-ink text-sm">Ad-free · 7 languages · Ages 2–10</span>
             </div>
           </div>
 

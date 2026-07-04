@@ -1,8 +1,38 @@
 import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import { IMG } from '../assets.js'
 import { AppleBadge, Stagger, RevealItem } from './ui.jsx'
 import { fadeUp, viewport as vp } from '../motion.js'
 import { FOOTER_COLS } from '../data.js'
+
+const MotionLink = motion(Link)
+
+// Renders the right element per destination: external URL → new-tab <a>,
+// in-app route (/signup) → router <Link>, in-page anchor (#how) → plain <a>.
+function FooterLink({ href, children }) {
+  const cls = 'inline-block text-sm font-semibold hover:text-sunny transition-colors'
+  const hover = { x: 4 }
+  const trans = { type: 'spring', stiffness: 500, damping: 28 }
+  if (/^https?:\/\//.test(href)) {
+    return (
+      <motion.a href={href} target="_blank" rel="noopener noreferrer" className={cls} whileHover={hover} transition={trans}>
+        {children}
+      </motion.a>
+    )
+  }
+  if (href.startsWith('/')) {
+    return (
+      <MotionLink to={href} className={cls} whileHover={hover} transition={trans}>
+        {children}
+      </MotionLink>
+    )
+  }
+  return (
+    <motion.a href={href} className={cls} whileHover={hover} transition={trans}>
+      {children}
+    </motion.a>
+  )
+}
 
 export default function Footer() {
   return (
@@ -26,16 +56,9 @@ export default function Footer() {
             <RevealItem variants={fadeUp} key={h}>
               <div className="font-extrabold text-white text-sm">{h}</div>
               <ul className="mt-3 space-y-2">
-                {items.map((it) => (
-                  <li key={it}>
-                    <motion.a
-                      href="#"
-                      className="inline-block text-sm font-semibold hover:text-sunny transition-colors"
-                      whileHover={{ x: 4 }}
-                      transition={{ type: 'spring', stiffness: 500, damping: 28 }}
-                    >
-                      {it}
-                    </motion.a>
+                {items.map(([label, href]) => (
+                  <li key={label}>
+                    <FooterLink href={href}>{label}</FooterLink>
                   </li>
                 ))}
               </ul>

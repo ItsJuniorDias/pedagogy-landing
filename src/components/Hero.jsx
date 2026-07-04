@@ -1,6 +1,6 @@
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { IMG, OWL_EYES } from '../assets.js'
-import { AppleBadge, GoogleBadge, Stars, Bubble } from './ui.jsx'
+import { AppleBadge, WebAppBadge, Bubble } from './ui.jsx'
 import { container, fadeUp, spring } from '../motion.js'
 import { useGetApp } from '../hooks/useGetApp.js'
 import { usePopupParallax } from '../hooks/usePopupParallax.js'
@@ -113,18 +113,25 @@ export default function Hero() {
               Download free
             </motion.a>
             <AppleBadge placement="hero" />
-            <GoogleBadge placement="hero" />
+            <WebAppBadge placement="hero" />
           </motion.div>
 
+          {/* risk-reversal — the three things a hesitant parent checks first */}
+          <motion.p
+            variants={fadeUp}
+            className="mt-4 text-sm font-bold text-inksoft"
+          >
+            Free to download · No ads · Cancel anytime
+          </motion.p>
+
+          {/* honest trust signals (no invented user counts or ratings) */}
           <motion.div
             variants={fadeUp}
-            className="mt-6 flex flex-wrap items-center justify-center lg:justify-start gap-x-5 gap-y-2 text-sm font-bold text-inksoft"
+            className="mt-5 flex flex-wrap items-center justify-center lg:justify-start gap-x-5 gap-y-2 text-sm font-bold text-inksoft"
           >
-            <span className="inline-flex items-center gap-1.5">
-              <Stars /> <span className="text-ink">4.9</span> on the App Store
-            </span>
-            <span className="inline-flex items-center gap-1.5">❤️ Loved by 50,000+ families</span>
             <span className="inline-flex items-center gap-1.5">🛡️ 100% ad-free</span>
+            <span className="inline-flex items-center gap-1.5">🌍 Reads in 7 languages</span>
+            <span className="inline-flex items-center gap-1.5">🎓 Built with educators</span>
           </motion.div>
         </motion.div>
 

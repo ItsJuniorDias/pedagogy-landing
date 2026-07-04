@@ -12,6 +12,7 @@ const LINKS = [
   ['Stories', '#stories'],
   ['For parents', '#parents'],
   ['Pricing', '#pricing'],
+  ['FAQ', '#faq'],
 ]
 
 export default function Nav() {

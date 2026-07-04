@@ -16,8 +16,8 @@ const HREF = `https://wa.me/${PHONE}?text=${encodeURIComponent(MESSAGE)}`
 export default function WhatsAppButton() {
   return (
     <motion.div
-      className="fixed right-5 sm:right-6 z-50"
-      style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.25rem)' }}
+      className="fixed right-5 sm:right-6 z-50 transition-[bottom] duration-300 ease-out"
+      style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.25rem + var(--sticky-cta-h, 0px))' }}
       // Pops in after the hero has settled. Reduced-motion users get a plain
       // opacity fade (the scale transform is disabled globally via MotionConfig).
       initial={{ opacity: 0, scale: 0 }}

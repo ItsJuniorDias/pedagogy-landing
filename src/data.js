@@ -3,12 +3,15 @@
 // social-proof numbers without touching the components.
 // -----------------------------------------------------------------------------
 
-// ⚠️ PLACEHOLDER SOCIAL PROOF — replace with your real numbers before launch.
+// Honest, verifiable product facts — no invented user counts or ratings.
+// (A brand-new app has no real "50k users / 4.9★" to show yet; claiming them on
+//  paid traffic erodes trust and risks App Store / ad-policy issues. These four
+//  are all true of the product itself, so they convert without over-promising.)
 export const STATS = [
-  ['4.9★', 'App Store rating'],
-  ['50k+', 'little readers'],
-  ['50+', 'magic stories'],
-  ['0', 'ads, ever'],
+  ['50+', 'interactive stories'],
+  ['7', 'languages'],
+  ['0', 'ads — ever'],
+  ['100%', 'kid-safe'],
 ]
 
 // The signature "story path" — milestones from first sound to first story.
@@ -71,12 +74,49 @@ export const BENEFITS = [
   { e: '⏳', bg: '#DDEFFF', t: 'Screen time that counts', b: "Short, focused sessions that build skills — time you'll feel good about." },
 ]
 
-// ⚠️ PLACEHOLDER TESTIMONIAL — replace with a real review before launch.
-export const TESTIMONIAL = {
+// An honest founder note in place of an invented review. Alexandre ships these
+// apps solo — leaning into that is both true and a genuine trust signal for
+// parents wary of data-hungry "big studio" kids apps.
+// ➜ Once you collect a REAL App Store review you're happy to show, you can add
+//   it here as { quote, author } and render it alongside (or instead of) this.
+export const FOUNDER = {
   quote:
-    "“My daughter asks to do her ‘owl reading’ before bed. She's learning her letters and doesn't even realize it.”",
-  author: '— Maria, parent of a 4-year-old',
+    'Pedagogy is built by one independent developer — not a giant studio chasing ad revenue. That shapes every choice: no ads, no third-party tracking, no dark patterns. Just calm, joyful stories that quietly teach reading along the way.',
+  author: '— From the developer behind Pedagogy',
 }
+
+// Objection-handling FAQ. Every answer is truthful for the current product
+// (Kids Category, iOS-only for now, 7 languages, free to download + subscription).
+export const FAQ = [
+  [
+    'Is Pedagogy safe for my child?',
+    'Yes. It’s built for the App Store Kids Category: no ads, no third-party tracking, and no open web links or chat. A parental gate guards anything outside the play area, so your child can only reach the stories and lessons.',
+  ],
+  [
+    'What ages is it for?',
+    'Ages 2–10 — from first letter sounds and phonics all the way to reading full stories with confidence. The content grows with your child.',
+  ],
+  [
+    'Is it free?',
+    'The app is free to download and try. A subscription unlocks the full library of stories, the complete phonics path, and the games. You can cancel anytime.',
+  ],
+  [
+    'Does it work offline?',
+    'Yes. Downloaded stories play with no connection — perfect for car rides, flights, or anywhere Wi-Fi isn’t.',
+  ],
+  [
+    'What languages does it support?',
+    'The app and its stories read in 7 languages, so kids can learn in the language you speak at home.',
+  ],
+  [
+    'Which devices can I use?',
+    'Pedagogy is on iPhone and iPad through the App Store. There’s no Android app yet — but you can also start right now in your web browser.',
+  ],
+  [
+    'How do I cancel?',
+    'Manage or cancel anytime from your App Store subscription settings. No emails to send, no hoops to jump through.',
+  ],
+]
 
 export const PRICING = {
   monthly: {
@@ -88,13 +128,32 @@ export const PRICING = {
     price: '$79.99',
     subnote: 'Just $6.67/mo · Save 33%',
     features: ['Everything in Monthly', 'Save 33% vs paying monthly', 'Offline reading anywhere', 'Priority new releases'],
-    promo: '🎉 20% off for the first 100 subscribers',
+    // Honest, concrete reframe of the 33% saving (no invented "first 100" scarcity).
+    promo: '💛 That’s like getting 4 months free vs paying monthly',
   },
 }
 
+// [label, href] — real, working destinations only. In-page anchors scroll the
+// visitor to the matching section; external ones open the store / chat. Legal
+// links point to '#' until you publish real policy pages — swap those in.
 export const FOOTER_COLS = [
-  ['Product', ['How it works', 'Stories', 'Pricing', 'Download']],
-  ['Company', ['About', 'Careers', 'Press', 'Blog']],
-  ['Support', ['Help center', 'Contact', "Parents' guide", 'Status']],
-  ['Legal', ['Privacy', 'Terms', 'Cookies', 'Child safety']],
+  ['Product', [
+    ['How it works', '#how'],
+    ['Stories', '#stories'],
+    ['Pricing', '#pricing'],
+    ['FAQ', '#faq'],
+  ]],
+  ['Get the app', [
+    ['Download on the App Store', 'https://apps.apple.com/us/app/pedagogy-kids-books/id6776011454'],
+    ['Play in your browser', '/signup'],
+  ]],
+  ['Support', [
+    ['Chat on WhatsApp', 'https://wa.me/5512976094583'],
+    ['Common questions', '#faq'],
+  ]],
+  ['Legal', [
+    ['Privacy', '#'],
+    ['Terms', '#'],
+    ['Child safety', '#'],
+  ]],
 ]

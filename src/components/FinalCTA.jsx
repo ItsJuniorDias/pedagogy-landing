@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { IMG } from '../assets.js'
-import { AppleBadge, GoogleBadge, Stagger, RevealItem } from './ui.jsx'
+import { AppleBadge, WebAppBadge, Stagger, RevealItem } from './ui.jsx'
 import { scaleIn, fadeUp, spring, viewport as vp } from '../motion.js'
 
 export default function FinalCTA() {
@@ -59,14 +59,14 @@ export default function FinalCTA() {
               reading adventure today
             </RevealItem>
             <RevealItem variants={fadeUp} as="p" className="mt-4 text-lg text-inksoft font-bold max-w-xl mx-auto">
-              Join 50,000+ families turning screen time into story time. It's free to begin.
+              Be one of the first families to turn screen time into story time. It's free to begin.
             </RevealItem>
             <RevealItem variants={fadeUp} className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <AppleBadge placement="final_cta" />
-              <GoogleBadge placement="final_cta" />
+              <WebAppBadge placement="final_cta" />
             </RevealItem>
             <RevealItem variants={fadeUp} as="div" className="mt-4 text-sm font-bold text-inksoft">
-              No ads · Made with educators · Ages 2–10
+              Free to download · No ads · Cancel anytime
             </RevealItem>
           </Stagger>
         </motion.div>

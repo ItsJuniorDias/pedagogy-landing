@@ -6,9 +6,11 @@ import Worlds from '../components/Worlds.jsx'
 import LessonPeek from '../components/LessonPeek.jsx'
 import ParentsLove from '../components/ParentsLove.jsx'
 import Pricing from '../components/Pricing.jsx'
+import Faq from '../components/Faq.jsx'
 import FinalCTA from '../components/FinalCTA.jsx'
 import Footer from '../components/Footer.jsx'
 import WhatsAppButton from '../components/WhatsAppButton.jsx'
+import StickyCTA from '../components/StickyCTA.jsx'
 import { useScrollDepth } from '../lib/pixel-hooks.js'
 
 export default function Landing() {
@@ -24,9 +26,11 @@ export default function Landing() {
       <LessonPeek />
       <ParentsLove />
       <Pricing />
+      <Faq />
       <FinalCTA />
       <Footer />
       <WhatsAppButton />
+      <StickyCTA />
     </main>
   )
 }

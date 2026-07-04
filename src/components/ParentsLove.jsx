@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
-import { Reveal, Stagger, RevealItem, Stars } from './ui.jsx'
+import { Reveal, Stagger, RevealItem } from './ui.jsx'
 import { fadeUp, scaleIn, spring, viewport as vp } from '../motion.js'
-import { BENEFITS, TESTIMONIAL } from '../data.js'
+import { BENEFITS, FOUNDER } from '../data.js'
 
 export default function ParentsLove() {
   return (
@@ -40,7 +40,7 @@ export default function ParentsLove() {
           ))}
         </Stagger>
 
-        {/* parent quote */}
+        {/* founder note — honest, and a real differentiator vs data-hungry apps */}
         <motion.figure
           className="mt-10 rounded-3xl bg-gradient-to-br from-grape to-graped text-white p-8 sm:p-10 text-center max-w-3xl mx-auto shadow-xl"
           initial="hidden"
@@ -48,11 +48,13 @@ export default function ParentsLove() {
           viewport={vp}
           variants={scaleIn}
         >
-          <Stars className="justify-center" />
-          <blockquote className="mt-3 font-display font-bold text-2xl sm:text-3xl leading-snug">
-            {TESTIMONIAL.quote}
+          <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3.5 py-1.5 text-[12px] font-extrabold uppercase tracking-wider text-white/90">
+            <span aria-hidden="true">🦉</span> A note from the developer
+          </span>
+          <blockquote className="mt-4 font-display font-bold text-2xl sm:text-[1.9rem] leading-snug">
+            {FOUNDER.quote}
           </blockquote>
-          <figcaption className="mt-4 font-bold text-white/80">{TESTIMONIAL.author}</figcaption>
+          <figcaption className="mt-4 font-bold text-white/80">{FOUNDER.author}</figcaption>
         </motion.figure>
       </div>
     </section>

@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import {
   fadeUp,
   container,
@@ -8,6 +9,7 @@ import {
   EASE,
 } from '../motion.js'
 import { useGetApp } from '../hooks/useGetApp.js'
+import { trackDownloadClick } from '../lib/pixel.js'
 
 /**
  * Reveal — fades children up into view on scroll (Framer Motion).
@@ -114,25 +116,41 @@ export function AppleBadge({ className = '', placement = 'badge' }) {
   )
 }
 
-export function GoogleBadge({ className = '', placement = 'badge' }) {
-  const app = useGetApp({ placement, cta: 'google_badge' })
+/**
+ * WebAppBadge — honest secondary CTA. There is no Android app (yet), so instead
+ * of a Google Play badge that dead-ends, this always opens the web app in the
+ * browser. Works for Android AND desktop visitors who can't install from iOS.
+ */
+export function WebAppBadge({ className = '', placement = 'badge' }) {
   return (
-    <a
-      {...app}
-      className={'btn3d b-dark px-4 py-2.5 ' + className}
-      aria-label="Get it on Google Play"
+    <Link
+      to="/signup"
+      onClick={() =>
+        trackDownloadClick({ placement, cta: 'web_app_badge', destination: 'web_app' })
+      }
+      className={'btn3d b-white px-4 py-2.5 ring-1 ring-grape/15 ' + className}
+      aria-label="Play in your browser — no download"
     >
-      <svg width="20" height="22" viewBox="0 0 512 512" aria-hidden="true">
-        <path d="M48 59.49v393a4.33 4.33 0 0 0 7.37 3.07l201.32-200.62-201.32-198.6A4.33 4.33 0 0 0 48 59.49z" fill="#48c5ff" />
-        <path d="M345.8 174 89.22 32.64l-.16-.09c-4.42-2.4-8.62 3.58-5 7.06l201.7 199.32z" fill="#43e695" />
-        <path d="M285.75 273.13 84.06 472.39c-3.6 3.48.6 9.46 5 7.06l.16-.09L345.8 338z" fill="#ff5e6e" />
-        <path d="M449.38 231.81 374.66 191l-65 64.66 65 64.66 74.72-40.8c12.83-7.03 12.83-25.69 0-32.71z" fill="#ffcf48" />
+      <svg
+        width="20"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.1"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="12" r="9.2" />
+        <path d="M3 12h18" />
+        <path d="M12 2.8c2.5 2.6 2.5 15.8 0 18.4M12 2.8c-2.5 2.6-2.5 15.8 0 18.4" />
       </svg>
       <span className="text-left leading-none">
-        <span className="block text-[10px] font-body font-semibold opacity-80">GET IT ON</span>
-        <span className="block text-[15px] -mt-px">Google Play</span>
+        <span className="block text-[10px] font-body font-semibold opacity-70">NO DOWNLOAD</span>
+        <span className="block text-[15px] -mt-px">Play in browser</span>
       </span>
-    </a>
+    </Link>
   )
 }
 

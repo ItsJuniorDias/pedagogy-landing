@@ -71,8 +71,11 @@ pedagogy-landing/
         ├── LessonPeek.jsx
         ├── ParentsLove.jsx
         ├── Pricing.jsx
+        ├── Faq.jsx          # objection-handling accordion (safety, price, devices, cancel)
         ├── FinalCTA.jsx
-        └── Footer.jsx
+        ├── Footer.jsx
+        ├── StickyCTA.jsx    # mobile-only sticky "get it free" bar (appears on scroll)
+        └── WhatsAppButton.jsx
 ```
 
 ## Customizing
@@ -82,13 +85,41 @@ pedagogy-landing/
 - **Images** → drop replacements in `src/assets/` and update the imports in `src/assets.js`. Vite hashes and optimizes them automatically.
 - **Buttons / animations / phone mockups** → custom CSS lives in `src/index.css`.
 
-## ⚠️ Before you launch — replace the placeholders
+## ✅ Conversion pass — what changed & what's left
 
-These are mock values, marked with `⚠️` comments in `src/data.js`:
+This build was reworked for a **paid-traffic landing** (ads → App Store). Key
+changes, all centralised in `src/data.js` unless noted:
 
-1. **Social-proof numbers** — `STATS` ("50k+ little readers", "4.9★") and the hero badges in `Hero.jsx` ("Loved by 50,000+ families"). Swap in your real figures.
-2. **Testimonial** — `TESTIMONIAL` (the "Maria" quote) is fictional. Replace with a real review or remove it.
-3. **Store links** — every App Store / Google Play button and the `Download free` CTA point to `#download` / `#pricing` anchors. Update `href`s in `src/components/ui.jsx` (`AppleBadge` / `GoogleBadge`) and the CTAs once you have real store URLs.
+- **Removed invented social proof.** The old "4.9★ / 50,000+ families" and the
+  fictional "Maria" testimonial are gone (running ads on fake numbers erodes
+  trust and risks App Store / ad-policy trouble). In their place:
+  - `STATS` now show honest product facts (50+ stories · 7 languages · 0 ads · 100% kid-safe).
+  - The testimonial slot is an honest **founder note** (`FOUNDER`) — a real
+    differentiator vs data-hungry kids apps.
+- **Fixed the phantom Google Play badge.** There's no Android app, so the badge
+  (which used to dead-end at the *Apple* store) is replaced by `WebAppBadge` →
+  **"Play in browser"**, which opens the web app. Honest and actually useful to
+  Android/desktop visitors.
+- **Added an FAQ** (`FAQ`) that answers the real objections before the ask:
+  safety, ages, price, offline, languages, devices, cancellation.
+- **Added a mobile sticky CTA bar** (`StickyCTA.jsx`) — the single biggest lever
+  for mobile ad traffic. Slides in past the hero, one tap to the store.
+- **Tighter hero**: risk-reversal line ("Free · No ads · Cancel anytime") and
+  honest trust badges.
+- **Honest footer links** and refreshed `index.html` meta (title, OG/Twitter).
+
+### Still worth doing before / during the campaign
+
+1. **A real App Store review.** Once you have one you're happy to show, add it in
+   `src/data.js` as `{ quote, author }` and render it next to the founder note.
+2. **A proper share image.** `og:image` currently points at the square favicon —
+   a 1200×630 image makes WhatsApp/social link previews far more clickable.
+3. **Real Privacy / Terms / Child-safety pages.** The footer links point at `#`
+   until you publish them (App Store also expects a privacy URL).
+4. **Attribution reality check (Kids Category).** The Meta Pixel fires on the
+   *site* fine, but iOS install/subscribe attribution is limited for kids apps.
+   Optimise the campaign on `DownloadClick` (site) and treat store conversions as
+   directional. See `TRACKING.md`.
 
 ## Accessibility & polish
 
