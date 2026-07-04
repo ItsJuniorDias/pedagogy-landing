@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import FarmGameScreen from '../../games/farm-game/index.ts'
+import { trackPlayGame } from '../../lib/pixel.js'
 
 // Happy Farm — the React-Native/Expo 3D game ported to the web (react-native-web
 // + plain three.js). It owns its own HUD and fills a fixed-height frame.
@@ -8,6 +9,11 @@ export default function Farm() {
   const frameRef = useRef(null)
   const [fs, setFs] = useState(false)        // are we currently full-screen?
   const [cssFs, setCssFs] = useState(false)  // using the CSS fallback (e.g. iOS)?
+
+  // GamePlayed when the farm game opens.
+  useEffect(() => {
+    trackPlayGame({ game: 'farm' })
+  }, [])
 
   // Does this browser support the real Fullscreen API on an element?
   const nativeSupported = useCallback(() => {

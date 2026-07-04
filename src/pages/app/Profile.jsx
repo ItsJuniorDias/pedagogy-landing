@@ -11,6 +11,7 @@ import ReaderForm from "../../components/app/ReaderForm.jsx";
 import { Reveal, Stagger, RevealItem } from "../../components/ui.jsx";
 import { SectionHead } from "../../components/app/widgets.jsx";
 import { fadeUp, spring } from "../../motion.js";
+import { trackAddReader } from "../../lib/pixel.js";
 
 // --- account edit form (name / email / avatar) ------------------------------
 function AccountForm({ user, onSave, onCancel }) {
@@ -391,7 +392,10 @@ export default function Profile() {
         <ReaderForm
           onSave={(reader) => {
             const id = addReader(reader);
-            if (id) setActiveReader(id);
+            if (id) {
+              setActiveReader(id);
+              trackAddReader();
+            }
             setAdding(false);
           }}
           onCancel={() => setAdding(false)}

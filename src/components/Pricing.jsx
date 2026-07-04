@@ -3,12 +3,18 @@ import { Reveal, Stagger, RevealItem, Check } from './ui.jsx'
 import { fadeUp, popIn, spring, viewport as vp } from '../motion.js'
 import { PRICING } from '../data.js'
 import { useGetApp } from '../hooks/useGetApp.js'
+import { trackViewPricing } from '../lib/pixel.js'
+import { useOnceVisible } from '../lib/pixel-hooks.js'
 
 export default function Pricing() {
   const { monthly, annual } = PRICING
-  const app = useGetApp()
+  // Two calls so each button reports its own plan/cta in the DownloadClick event.
+  const appMonthly = useGetApp({ placement: 'pricing', cta: 'start_monthly', plan: 'monthly' })
+  const appAnnual = useGetApp({ placement: 'pricing', cta: 'start_annual', plan: 'annual' })
+  // Fire ViewContent once when the pricing section scrolls into view.
+  const sectionRef = useOnceVisible(trackViewPricing, { threshold: 0.3 })
   return (
-    <section id="pricing" className="relative py-20 sm:py-28">
+    <section ref={sectionRef} id="pricing" className="relative py-20 sm:py-28">
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         <Reveal className="text-center max-w-2xl mx-auto">
           <span className="text-[13px] font-extrabold tracking-wider uppercase text-bubblegum">Plans</span>
@@ -43,7 +49,7 @@ export default function Pricing() {
                 ))}
               </ul>
               <motion.a
-                {...app}
+                {...appMonthly}
                 className="btn3d b-white w-full px-6 py-3.5 mt-7 ring-1 ring-grape/15"
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
@@ -95,7 +101,7 @@ export default function Pricing() {
                 {annual.promo}
               </motion.div>
               <motion.a
-                {...app}
+                {...appAnnual}
                 className="btn3d b-sun w-full px-6 py-3.5 mt-4"
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}

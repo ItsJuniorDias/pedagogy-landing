@@ -8,6 +8,7 @@ import Avatar from '../components/app/Avatar.jsx'
 import { LEVELS } from '../data.app.js'
 import { useAuth } from '../auth/AuthContext.jsx'
 import { spring, EASE } from '../motion.js'
+import { trackLead, trackCompleteRegistration } from '../lib/pixel.js'
 
 export default function Signup() {
   const { signup } = useAuth()
@@ -25,6 +26,7 @@ export default function Signup() {
       return
     }
     setErr('')
+    trackLead({ content_name: 'signup', step: 'account' })
     setStep(1)
   }
 
@@ -39,6 +41,7 @@ export default function Signup() {
       email: account.email.trim().toLowerCase(),
       firstReader: reader,
     })
+    trackCompleteRegistration({ method: 'email' })
     navigate('/app', { replace: true })
   }
 
@@ -143,6 +146,7 @@ export default function Signup() {
             <SocialButtons
               onClick={() => {
                 signup({ name: 'Demo Parent', email: 'demo@pedagogy.app', firstReader: reader })
+                trackCompleteRegistration({ method: 'social' })
                 navigate('/app', { replace: true })
               }}
             />

@@ -62,8 +62,8 @@ export default function FinalCTA() {
               Join 50,000+ families turning screen time into story time. It's free to begin.
             </RevealItem>
             <RevealItem variants={fadeUp} className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <AppleBadge />
-              <GoogleBadge />
+              <AppleBadge placement="final_cta" />
+              <GoogleBadge placement="final_cta" />
             </RevealItem>
             <RevealItem variants={fadeUp} as="div" className="mt-4 text-sm font-bold text-inksoft">
               No ads · Made with educators · Ages 2–10

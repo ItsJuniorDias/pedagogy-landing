@@ -95,8 +95,8 @@ export function Floaty({ children, variant = 'bob', rotate = 0, delay = 0, class
   )
 }
 
-export function AppleBadge({ className = '' }) {
-  const app = useGetApp()
+export function AppleBadge({ className = '', placement = 'badge' }) {
+  const app = useGetApp({ placement, cta: 'apple_badge' })
   return (
     <a
       {...app}
@@ -114,8 +114,8 @@ export function AppleBadge({ className = '' }) {
   )
 }
 
-export function GoogleBadge({ className = '' }) {
-  const app = useGetApp()
+export function GoogleBadge({ className = '', placement = 'badge' }) {
+  const app = useGetApp({ placement, cta: 'google_badge' })
   return (
     <a
       {...app}

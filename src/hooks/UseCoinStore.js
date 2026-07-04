@@ -24,6 +24,11 @@ import {
   isCredited,
   markCredited,
 } from "../payments/coins.js";
+import {
+  trackInitiateCoinCheckout,
+  trackCoinPurchase,
+  trackSimulatedCoinPurchase,
+} from "../lib/pixel.js";
 
 // Shape the catalog into what MarketModal expects. A pack is "simulated" until
 // it has a real payment link, so dev still works and the modal shows the
@@ -68,6 +73,13 @@ export function useCoinStore({ onCoinsGranted } = {}) {
         const pack = getPack(pending?.sku);
         if (pack) {
           markCredited(ret.paymentId);
+          trackCoinPurchase({
+            sku: pack.sku,
+            value: pack.priceBRL,
+            currency: "BRL",
+            coins: pack.coins + pack.bonus,
+            id: ret.paymentId,
+          });
           cbRef.current && cbRef.current(pack.coins + pack.bonus);
         } else {
           // Lost the stashed pack (different tab / cleared storage). We can't
@@ -97,6 +109,10 @@ export function useCoinStore({ onCoinsGranted } = {}) {
       setPurchasingSku(sku);
       setTimeout(() => {
         setPurchasingSku(null);
+        trackSimulatedCoinPurchase({
+          sku: pack.sku,
+          coins: pack.coins + pack.bonus,
+        });
         cbRef.current && cbRef.current(pack.coins + pack.bonus);
       }, 350);
       return;
@@ -104,6 +120,12 @@ export function useCoinStore({ onCoinsGranted } = {}) {
 
     // Real purchase → redirect to the Mercado Pago payment link.
     setPurchasingSku(sku);
+    trackInitiateCoinCheckout({
+      sku: pack.sku,
+      value: pack.priceBRL,
+      currency: "BRL",
+      coins: pack.coins + pack.bonus,
+    });
     startCoinCheckout({
       sku,
       returnTo: window.location.pathname + window.location.search,

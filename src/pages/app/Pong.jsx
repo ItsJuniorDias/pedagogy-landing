@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import PongHub from '../../games/pong-game/index.ts'
+import { trackPlayGame } from '../../lib/pixel.js'
 
 // Neon Pong — the React-Native/Expo 3D game ported to the web (react-native-web
 // + plain three.js), exactly like Happy Farm. PongHub owns the whole experience:
@@ -11,6 +12,11 @@ export default function Pong() {
   const frameRef = useRef(null)
   const [fs, setFs] = useState(false)        // native fullscreen active?
   const [cssFs, setCssFs] = useState(false)  // CSS fallback (e.g. iOS Safari)?
+
+  // GamePlayed when the pong game opens.
+  useEffect(() => {
+    trackPlayGame({ game: 'pong' })
+  }, [])
 
   const nativeSupported = useCallback(() => {
     const el = frameRef.current

@@ -19,6 +19,14 @@ import {
   readPendingCheckout,
   clearPendingCheckout,
 } from "../../payments/mercadopago.js";
+import {
+  parsePrice,
+  trackViewPaywall,
+  trackSelectPlan,
+  trackInitiateSubscription,
+  trackSubscribe,
+  trackSimulatedSubscribe,
+} from "../../lib/pixel.js";
 
 // Where to send people who back out, based on what they tried to unlock.
 const backFor = (kind) => (kind === "course" ? "/app/path" : "/app/stories");
@@ -161,6 +169,23 @@ export default function Paywall() {
     [],
   );
 
+  // { value, currency } for a plan id, parsed from its display price.
+  const priceOf = (id) => parsePrice(plans[id]?.price);
+
+  // Fire ViewContent once when the paywall is actually shown (not on redirect).
+  useEffect(() => {
+    if (isPremiumPlan(user?.plan)) return;
+    trackViewPaywall({ kind: ctx.kind, title: ctx.title });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Select a plan + report the choice (with value/currency) to the pixel.
+  const selectPlan = (id) => {
+    setSelected(id);
+    const { value, currency } = priceOf(id);
+    trackSelectPlan({ plan: id, value, currency });
+  };
+
   // Handle the return from Mercado Pago's hosted checkout (the plan's back_url
   // should point here, e.g. https://<domain>/app/paywall). When the user comes
   // back with an approved subscription we OPTIMISTICALLY flip the account to
@@ -182,6 +207,14 @@ export default function Paywall() {
         cycle: plans[planId]?.per,
         provider: "mercadopago",
         preapprovalId: ret.preapprovalId,
+      });
+      const { value, currency } = priceOf(planId);
+      trackSubscribe({
+        plan: planId,
+        value,
+        currency,
+        provider: "mercadopago",
+        id: ret.preapprovalId,
       });
       clearPendingCheckout();
       navigate(returnTo, { replace: true });
@@ -210,6 +243,8 @@ export default function Paywall() {
       setNotice("coming-soon");
       return;
     }
+    const { value, currency } = priceOf(selected);
+    trackInitiateSubscription({ plan: selected, value, currency });
     setWorking(true);
     try {
       const res = await startSubscriptionCheckout({
@@ -228,6 +263,7 @@ export default function Paywall() {
 
   // Dev-only: flip to Premium so the unlock flow is testable before payments.
   const handleSimulate = () => {
+    trackSimulatedSubscribe({ plan: selected });
     upgradePlan("Premium", { plan: selected, cycle: plans[selected].per });
     navigate(ctx.from || "/app", { replace: true });
   };
@@ -279,14 +315,14 @@ export default function Paywall() {
           <PlanCard
             {...plans.monthly}
             selected={selected === "monthly"}
-            onSelect={() => setSelected("monthly")}
+            onSelect={() => selectPlan("monthly")}
           />
         </RevealItem>
         <RevealItem variants={fadeUp}>
           <PlanCard
             {...plans.annual}
             selected={selected === "annual"}
-            onSelect={() => setSelected("annual")}
+            onSelect={() => selectPlan("annual")}
           />
         </RevealItem>
       </Stagger>

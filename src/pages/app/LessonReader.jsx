@@ -1,7 +1,8 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import Reader from '../../components/app/Reader.jsx'
 import { resolveCourse } from '../../data.path.js'
+import { trackViewLesson } from '../../lib/pixel.js'
 
 // Thin route wrapper for the Learning Path:
 //   /app/path/:courseId            → open the lesson list
@@ -16,6 +17,11 @@ export default function LessonReader() {
     const i = data.lessons.findIndex((l) => String(l.id) === String(lessonId))
     return i >= 0 ? i : null
   }, [data, lessonId])
+
+  // ViewContent when a course/lesson is opened.
+  useEffect(() => {
+    trackViewLesson({ id: courseId, title: data?.course?.title })
+  }, [courseId, data])
 
   return (
     <Reader

@@ -1,5 +1,6 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, Fragment } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { usePageViews } from './lib/pixel-hooks.js'
 import Landing from './pages/Landing.jsx'
 import Login from './pages/Login.jsx'
 import Signup from './pages/Signup.jsx'
@@ -28,9 +29,18 @@ function GameFallback({ emoji = '🎮' }) {
   )
 }
 
+// Fires a Meta Pixel PageView on every client-side route change (SPA).
+// Renders nothing — it just runs the hook inside the Router context.
+function RouteChangeTracker() {
+  usePageViews()
+  return null
+}
+
 export default function App() {
   return (
-    <Routes>
+    <Fragment>
+      <RouteChangeTracker />
+      <Routes>
       {/* public */}
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
@@ -76,6 +86,7 @@ export default function App() {
 
       {/* fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </Fragment>
   )
 }

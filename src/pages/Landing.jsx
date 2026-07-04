@@ -9,8 +9,11 @@ import Pricing from '../components/Pricing.jsx'
 import FinalCTA from '../components/FinalCTA.jsx'
 import Footer from '../components/Footer.jsx'
 import WhatsAppButton from '../components/WhatsAppButton.jsx'
+import { useScrollDepth } from '../lib/pixel-hooks.js'
 
 export default function Landing() {
+  // ScrollDepth 25/50/75/100 on the marketing page.
+  useScrollDepth()
   return (
     <main>
       <Nav />

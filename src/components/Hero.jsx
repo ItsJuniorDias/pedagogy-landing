@@ -10,7 +10,7 @@ import { useOwlEyes } from '../hooks/useOwlEyes.js'
 const add = ([a, b]) => a + b
 
 export default function Hero() {
-  const app = useGetApp()
+  const app = useGetApp({ placement: 'hero', cta: 'download_free' })
 
   // Pointer / gyro tilt for the pop-up scene. px,py ≈ -0.5..0.5 from center.
   const { ref, px, py, reduce } = usePopupParallax()
@@ -112,8 +112,8 @@ export default function Hero() {
             >
               Download free
             </motion.a>
-            <AppleBadge />
-            <GoogleBadge />
+            <AppleBadge placement="hero" />
+            <GoogleBadge placement="hero" />
           </motion.div>
 
           <motion.div

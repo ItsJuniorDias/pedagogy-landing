@@ -5,6 +5,7 @@ import AuthShell from "../components/auth/AuthShell.jsx";
 import { Field, SocialButtons } from "../components/app/Field.jsx";
 import { useAuth } from "../auth/AuthContext.jsx";
 import { spring } from "../motion.js";
+import { trackLogin } from "../lib/pixel.js";
 
 export default function Login() {
   const { login } = useAuth();
@@ -28,6 +29,7 @@ export default function Login() {
       .replace(/[._-]+/g, " ")
       .replace(/\b\w/g, (m) => m.toUpperCase());
     login({ email: email.trim().toLowerCase(), name });
+    trackLogin({ method: "email" });
     navigate(dest, { replace: true });
   };
 

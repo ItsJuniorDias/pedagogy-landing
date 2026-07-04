@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { IMG } from '../assets.js'
 import { EASE, spring } from '../motion.js'
+import { trackCtaClick } from '../lib/pixel.js'
 
 const MotionLink = motion(Link)
 
@@ -63,12 +64,14 @@ export default function Nav() {
         <div className="hidden md:flex items-center gap-3">
           <Link
             to="/login"
+            onClick={() => trackCtaClick({ cta: 'login', placement: 'nav' })}
             className="font-body font-bold text-[15px] text-inksoft hover:text-grape transition-colors px-2"
           >
             Log in
           </Link>
           <MotionLink
             to="/signup"
+            onClick={() => trackCtaClick({ cta: 'get_started', placement: 'nav' })}
             className="btn3d b-pink px-5 py-2.5 text-[15px]"
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.96 }}
@@ -125,14 +128,20 @@ export default function Nav() {
               <div className="mt-2 pt-2 border-t border-black/5 flex flex-col gap-2">
                 <Link
                   to="/login"
-                  onClick={() => setOpen(false)}
+                  onClick={() => {
+                    trackCtaClick({ cta: 'login', placement: 'nav_mobile' })
+                    setOpen(false)
+                  }}
                   className="block text-center px-4 py-3 rounded-xl font-extrabold text-grape bg-lilac/60 hover:bg-lilac"
                 >
                   Log in
                 </Link>
                 <Link
                   to="/signup"
-                  onClick={() => setOpen(false)}
+                  onClick={() => {
+                    trackCtaClick({ cta: 'get_started', placement: 'nav_mobile' })
+                    setOpen(false)
+                  }}
                   className="btn3d b-pink w-full px-5 py-3"
                 >
                   Get started

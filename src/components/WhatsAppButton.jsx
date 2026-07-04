@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { spring } from '../motion.js'
+import { trackContact } from '../lib/pixel.js'
 
 // ---------------------------------------------------------------------------
 // WhatsApp float button — chunky 3D "press" style to match the Pedagogy brand.
@@ -38,6 +39,7 @@ export default function WhatsAppButton() {
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Chat with us on WhatsApp"
+        onClick={() => trackContact({ channel: 'whatsapp' })}
         className="btn3d b-whats group relative w-14 h-14 sm:w-16 sm:h-16"
         style={{ borderRadius: 9999 }}
       >
