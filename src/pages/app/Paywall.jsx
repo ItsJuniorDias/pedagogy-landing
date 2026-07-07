@@ -18,13 +18,14 @@ import {
   readCheckoutReturn,
   readPendingCheckout,
   clearPendingCheckout,
+  fetchSubscriptionStatus,
 } from "../../payments/mercadopago.js";
 import {
   parsePrice,
   trackViewPaywall,
   trackSelectPlan,
   trackInitiateSubscription,
-  trackSubscribe,
+  trackSubscriptionPurchase,
   trackSimulatedSubscribe,
 } from "../../lib/pixel.js";
 
@@ -142,8 +143,9 @@ export default function Paywall() {
   const ctx = location.state || {}; // { kind, title, emoji, from }
 
   const [selected, setSelected] = useState("annual");
-  const [notice, setNotice] = useState(null); // 'coming-soon' | 'error' | 'cancelled'
+  const [notice, setNotice] = useState(null); // 'coming-soon' | 'error' | 'cancelled' | 'processing'
   const [working, setWorking] = useState(false);
+  const [verifying, setVerifying] = useState(false); // confirmando pagamento no retorno
   const [searchParams, setSearchParams] = useSearchParams();
 
   const plans = useMemo(
@@ -186,45 +188,107 @@ export default function Paywall() {
     trackSelectPlan({ plan: id, value, currency });
   };
 
-  // Handle the return from Mercado Pago's hosted checkout (the plan's back_url
-  // should point here, e.g. https://<domain>/app/paywall). When the user comes
-  // back with an approved subscription we OPTIMISTICALLY flip the account to
-  // Premium. This is not authoritative — a webhook is still the source of truth
-  // for production (see payments/mercadopago.js) — but it unlocks immediately
-  // for the happy path and keeps the UX smooth.
+  // Trata o retorno do checkout hospedado do Mercado Pago (o back_url do plano
+  // aponta pra cá, ex.: https://<domínio>/app/paywall).
+  //
+  // ⚠️  O back_url NÃO prova pagamento — o MP manda o usuário de volta mesmo com
+  // a assinatura `pending` (cartão em análise, Pix/boleto não pago, aba fechada).
+  // Então NÃO liberamos o acesso nem disparamos a conversão só porque voltou.
+  // Confirmamos o status REAL no servidor (fetchSubscriptionStatus → MP) e só
+  // quando ele volta `authorized` é que liberamos Premium e disparamos o
+  // Purchase — com eventID determinístico para deduplicar com o CAPI do backend.
   useEffect(() => {
     const ret = readCheckoutReturn(searchParams);
     if (!ret) return;
 
-    if (ret.status === "approved") {
-      // location.state was lost on the external redirect — recover the chosen
-      // plan and return path from the pre-redirect stash (sessionStorage).
-      const pending = readPendingCheckout();
-      const planId = pending?.planId || selected;
-      const returnTo = pending?.returnTo || ctx.from || "/app";
+    // Cancelamento explícito na própria URL: não há o que confirmar.
+    if (ret.outcome === "cancelled") {
+      clearPendingCheckout();
+      setNotice("cancelled");
+      setSearchParams({}, { replace: true }); // evita re-disparo no refresh
+      return;
+    }
+
+    // Recupera plano + retorno guardados antes do redirect (location.state some).
+    const pending = readPendingCheckout();
+    const planId = pending?.planId || selected;
+    const returnTo = pending?.returnTo || ctx.from || "/app";
+
+    // Confirma o pagamento e SÓ ENTÃO libera + dispara o Purchase.
+    const confirmPaid = () => {
+      const { value, currency } = priceOf(planId);
       upgradePlan("Premium", {
         plan: planId,
         cycle: plans[planId]?.per,
         provider: "mercadopago",
         preapprovalId: ret.preapprovalId,
       });
-      const { value, currency } = priceOf(planId);
-      trackSubscribe({
+      trackSubscriptionPurchase({
         plan: planId,
         value,
         currency,
-        provider: "mercadopago",
         id: ret.preapprovalId,
       });
       clearPendingCheckout();
       navigate(returnTo, { replace: true });
-    } else if (ret.status === "cancelled") {
-      clearPendingCheckout();
-      setNotice("cancelled");
-      // Strip the params so a refresh doesn't re-trigger the notice.
-      setSearchParams({}, { replace: true });
-    }
-    // 'pending' → leave them on the paywall; the webhook/return will confirm later.
+    };
+
+    let cancelled = false;
+    (async () => {
+      setNotice(null);
+      setVerifying(true);
+
+      // O primeiro pagamento recorrente pode levar alguns segundos pra sair de
+      // `pending` → `authorized`. Fazemos algumas tentativas antes de entregar
+      // ao webhook. (Purchase usa eventID determinístico, então mesmo que o
+      // webhook também dispare, o Meta deduplica.)
+      const MAX_TRIES = 5;
+      const DELAY_MS = 3000;
+
+      for (let i = 0; i < MAX_TRIES && !cancelled; i++) {
+        const r = await fetchSubscriptionStatus(ret.preapprovalId);
+        if (cancelled) return;
+
+        if (r.status === "authorized" || r.paid) {
+          setVerifying(false);
+          confirmPaid();
+          return;
+        }
+        if (r.status === "cancelled" || r.status === "paused") {
+          setVerifying(false);
+          setNotice("cancelled");
+          setSearchParams({}, { replace: true });
+          return;
+        }
+        if (r.status === "unconfigured") {
+          // Sem VITE_API_BASE: não dá pra verificar. FALHA SEGURA — não libera e
+          // não dispara Purchase. O webhook + re-sync do plano no próximo load
+          // é a fonte da verdade.
+          if (import.meta?.env?.DEV) {
+            // eslint-disable-next-line no-console
+            console.warn(
+              "[paywall] VITE_API_BASE não configurado — sem verificar pagamento; mantendo bloqueado até o webhook confirmar.",
+            );
+          }
+          break;
+        }
+        // 'pending' | 'error' | 'unknown' → espera e tenta de novo.
+        if (i < MAX_TRIES - 1) {
+          await new Promise((res) => setTimeout(res, DELAY_MS));
+        }
+      }
+
+      if (!cancelled) {
+        // Não confirmou dentro da janela → NÃO libera, NÃO dispara Purchase.
+        setVerifying(false);
+        setNotice("processing");
+        setSearchParams({}, { replace: true });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
@@ -333,19 +397,35 @@ export default function Paywall() {
           <motion.button
             type="button"
             onClick={handleSubscribe}
-            disabled={working}
+            disabled={working || verifying}
             whileTap={{ scale: 0.98 }}
             transition={spring.press}
             className={
               "btn3d b-grape w-full px-6 py-3.5 text-base sm:text-lg " +
-              (working ? "opacity-70 pointer-events-none" : "")
+              (working || verifying ? "opacity-70 pointer-events-none" : "")
             }
           >
-            {working
-              ? "Connecting…"
-              : `Subscribe — ${plans[selected].price} / ${plans[selected].per}`}
+            {verifying
+              ? "Confirming your payment…"
+              : working
+                ? "Connecting…"
+                : `Subscribe — ${plans[selected].price} / ${plans[selected].per}`}
           </motion.button>
 
+          {verifying && (
+            <p className="mt-3 rounded-2xl bg-cream px-4 py-3 text-[14px] font-bold text-ink ring-1 ring-black/5">
+              ⏳ Confirming your payment with Mercado Pago… this only takes a
+              moment.
+            </p>
+          )}
+          {notice === "processing" && (
+            <p className="mt-3 rounded-2xl bg-butter px-4 py-3 text-[14px] font-bold text-ink ring-1 ring-sunnyd/20">
+              We got your checkout, but the payment is still being processed by
+              Mercado Pago. As soon as it’s approved your access unlocks
+              automatically — you can close this page. Pix or boleto can take a
+              few minutes to confirm.
+            </p>
+          )}
           {notice === "coming-soon" && (
             <p className="mt-3 rounded-2xl bg-butter px-4 py-3 text-[14px] font-bold text-ink ring-1 ring-sunnyd/20">
               💳 This plan isn’t available for checkout just yet. Try the other

@@ -64,12 +64,21 @@ Personalizada / público no Gerenciador de Eventos).
 | Abrir o **paywall** | `ViewContent` | Padrão | `content_type: paywall`, `context` | `pages/app/Paywall.jsx` |
 | Alternar plano (mensal/anual) | `PlanSelected` | Custom | `plan`, `value`, `currency` | `pages/app/Paywall.jsx` |
 | Clicar em **Assinar** (vai pro checkout Mercado Pago) | `InitiateCheckout` | Padrão | `content_type: subscription`, `plan`, `value`, `currency` | `pages/app/Paywall.jsx` |
-| **Assinatura confirmada** no retorno do checkout | `Subscribe` | Padrão | `plan`, `value`, `currency`, `predicted_ltv`, `provider`, `subscription_id` | `pages/app/Paywall.jsx` |
+| **Pagamento confirmado** (status MP = `authorized`, verificado no servidor) | `Purchase` | Padrão | `content_type: subscription`, `plan`, `value`, `currency`, `predicted_ltv`, `subscription_id`, `transaction_id`, `eventID: sub.<preapproval_id>` | `pages/app/Paywall.jsx` |
 | Botão dev "Simular assinatura" | `SimulatedSubscribe` | Custom | `plan` | `pages/app/Paywall.jsx` |
 
 > **Mensal = US$ 9,99 · Anual = US$ 79,99** → enviados como `USD`.
-> O `Subscribe` é **a conversão** que você deve usar para otimizar a campanha de
-> assinatura (ver seção "Configurar conversões" abaixo).
+>
+> ⚠️ **A compra só dispara com pagamento confirmado.** O retorno do checkout
+> (`back_url`) **não** prova pagamento — o Mercado Pago manda o usuário de volta
+> mesmo com a assinatura `pending`. Por isso o `Purchase` só é disparado depois
+> que o servidor confirma o status real da preapproval como `authorized`
+> (`fetchSubscriptionStatus` → backend em `server-mercadopago/`). O clique em
+> Assinar continua sendo só `InitiateCheckout` (topo de funil, **não** é receita).
+>
+> O `eventID` é determinístico (`sub.<preapproval_id>`), idêntico ao do webhook
+> no servidor, então o Meta **deduplica** navegador + CAPI. Use `Purchase` como a
+> conversão da campanha de assinatura — mas só depois de acumular eventos reais.
 
 ### Compra de moedas — dentro do jogo Happy Farm (avulsa)
 
@@ -136,18 +145,28 @@ O ID está em dois lugares. Para trocar:
    eventos; o `init` de fato vive no `index.html`.)
 
 ### Otimizar a campanha por qual evento?
-- **Assinatura:** use **`Subscribe`** como evento de conversão. Se a sua conta
-  de anúncios estiver configurada para otimizar por `Purchase`, crie uma
-  **Conversão Personalizada** apontando para `Subscribe`, ou me avise que eu
-  troco o disparo para `Purchase`.
+- **Assinatura:** use **`Purchase`** como evento de conversão. Ele agora só
+  dispara com **pagamento confirmado** (status MP `authorized`), no navegador e
+  no servidor (CAPI), deduplicado pelo `eventID` determinístico. Só troque a
+  otimização para `Purchase` **depois** de acumular alguns eventos reais —
+  otimizar em cima de compra fantasma (ou de `InitiateCheckout`, que é topo de
+  funil) ensina o algoritmo a buscar quem inicia mas não paga.
 - **Compra de moedas:** já é `Purchase` (evento avulso correto).
 - **Instalação do app / topo:** crie uma Conversão Personalizada em cima de
   `DownloadClick` (opcionalmente filtrando `destination = app_store`).
 
-### Preparado para a Conversions API (CAPI)
-Todo evento padrão sai com um `eventID` gerado. Quando/se você adicionar o envio
-server-side pela CAPI, mande **o mesmo evento com o mesmo `eventID`** e o Meta
-**deduplica** as cópias navegador + servidor automaticamente. Nada a mudar aqui.
+### Conversions API (CAPI) — confirmação de pagamento
+A compra da assinatura é confirmada no servidor, não no navegador:
+- O site, no retorno do checkout, chama `GET /api/subscriptions/:id/status` e só
+  libera Premium + dispara `Purchase` se o MP responder `authorized`.
+- O `Purchase` server-side é disparado **apenas** pelo webhook do Mercado Pago,
+  quando o pagamento é confirmado — nunca no clique nem no `back_url`.
+- Navegador e servidor usam o mesmo `eventID` (`sub.<preapproval_id>`), então o
+  Meta deduplica as duas cópias.
+
+Código do backend e instruções: **`server-mercadopago/`**. Aponte o site para ele
+com `VITE_API_BASE` no `.env`. Vazio = falha segura (não libera nem dispara até o
+webhook confirmar).
 
 ---
 

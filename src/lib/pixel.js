@@ -199,7 +199,48 @@ export const trackInitiateSubscription = ({ plan, value, currency } = {}) =>
     num_items: 1,
   })
 
-/** Assinatura confirmada no retorno → Subscribe (padrão — A CONVERSÃO). */
+/**
+ * ID de evento DETERMINÍSTICO para a conversão da assinatura, derivado do
+ * preapproval_id do Mercado Pago. Navegador e servidor DEVEM montar o mesmo id
+ * do mesmo jeito — assim o Meta DEDUPLICA as cópias navegador vs. CAPI em vez de
+ * contar receita duas vezes. (O eventID aleatório de makeEventId nunca bateria
+ * com o servidor, então dedupe não funcionaria para a compra.)
+ */
+export const subscriptionEventId = (preapprovalId) =>
+  preapprovalId ? `sub.${preapprovalId}` : undefined
+
+/**
+ * Assinatura PAGA e confirmada (status MP = authorized) → Purchase (padrão).
+ *
+ * Este é o ÚNICO evento de receita da assinatura. Dispare-o SOMENTE depois de
+ * confirmar o pagamento no servidor — NUNCA no clique do botão nem no retorno
+ * cru do checkout (o back_url do MP dispara mesmo sem pagamento).
+ *
+ * Usa eventID determinístico (subscriptionEventId) para o servidor mandar o
+ * MESMO Purchase com o MESMO id e o Meta deduplicar as duas cópias.
+ */
+export const trackSubscriptionPurchase = ({ plan, value, currency, id } = {}) =>
+  track(
+    'Purchase',
+    {
+      content_type: 'subscription',
+      content_name: plan,
+      value,
+      currency,
+      predicted_ltv: value,
+      num_items: 1,
+      subscription_id: id,
+      transaction_id: id,
+    },
+    { eventID: subscriptionEventId(id) },
+  )
+
+/**
+ * @deprecated Disparava `Subscribe` no retorno do checkout, de forma otimista —
+ * antes de confirmar o pagamento. Use `trackSubscriptionPurchase`, chamado só
+ * após o servidor confirmar status `authorized`. Mantido apenas para não quebrar
+ * imports antigos; não use em código novo.
+ */
 export const trackSubscribe = ({ plan, value, currency, provider, id } = {}) =>
   track('Subscribe', {
     content_name: plan,
@@ -210,7 +251,7 @@ export const trackSubscribe = ({ plan, value, currency, provider, id } = {}) =>
     subscription_id: id,
   })
 
-/** Botão dev "Simular assinatura" — custom, para nunca poluir o Subscribe. */
+/** Botão dev "Simular assinatura" — custom, para nunca poluir o Purchase. */
 export const trackSimulatedSubscribe = ({ plan } = {}) =>
   trackCustom('SimulatedSubscribe', { plan })
 
