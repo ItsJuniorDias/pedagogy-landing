@@ -10,13 +10,46 @@ assinatura, incluindo compras avulsas de moedas e sinais de engajamento.
 
 ## 🧱 Arquitetura
 
-O tracking tem 3 camadas, para nunca quebrar e ficar fácil de manter:
+O tracking tem 4 camadas, para nunca quebrar e ficar fácil de manter:
 
 | Camada | Arquivo | Papel |
 | --- | --- | --- |
 | **Pixel base** | `index.html` | Carrega o `fbq`, faz o `init` e dispara o **primeiro** `PageView`. Já estava aqui. |
-| **Camada de eventos** | `src/lib/pixel.js` | Único ponto por onde todo evento passa. Wrapper seguro do `fbq` + um helper nomeado por ação (`trackSubscribe`, `trackDownloadClick`, …). |
+| **Camada de eventos** | `src/lib/pixel.js` | Único ponto por onde todo evento passa. Wrapper seguro do `fbq` + helpers nomeados + **Advanced Matching** (`identify`, `applyAdvancedMatching`, `bootIdentity`). |
+| **Identidade + CAPI (cliente)** | `src/lib/identity.js`, `src/lib/capi-client.js` | Guardam email/nome/`external_id`, leem `_fbp`/`_fbc`, e espelham eventos no backend (CAPI). |
 | **Hooks** | `src/lib/pixel-hooks.js` | Eventos que não vêm de um clique: `PageView` por troca de rota (SPA), profundidade de rolagem, "visível na viewport". |
+
+## 🎯 Qualidade da Correspondência de Eventos (EMQ) — de 3/10 para 7-8+
+
+EMQ baixa = o Meta recebe os eventos mas quase não os casa com usuários reais,
+porque o `user_data` vai fraco. A correção tem duas frentes:
+
+**1. Advanced Matching no navegador.** Antes o `init` do pixel não mandava
+nenhum dado do usuário. Agora, assim que sabemos o email (captura, cadastro ou
+login), `identify()` salva a identidade e reinicia o pixel com `em`/`fn`/`ln`/
+`ph`/`external_id` (o `fbq` hasheia sozinho) — e **todos os eventos seguintes**
+passam a carregar isso. Um `external_id` estável é aplicado logo no boot.
+
+**2. Captura de email (o `EmailGate`).** `src/components/EmailGate.jsx` mostra um
+modal pedindo o email no clique de "baixar o app" (o momento de maior intenção),
+uma única vez por visitante. Ao enviar: `identify` → `Lead` (navegador + CAPI) →
+segue pro destino (App Store / app web). Um link "No thanks" não bloqueia quem
+não quiser dar o email.
+
+**3. Espelho server-side (CAPI).** Eventos server-side casam melhor porque levam
+o que o navegador sozinho não garante: `client_ip_address`, `client_user_agent`,
+`_fbp`, `_fbc`. O `Lead` é espelhado em `POST /api/lead`; o `Purchase` do webhook
+é enriquecido com os dados guardados via `POST /api/checkout/attach` (chamado no
+retorno do checkout). Tudo deduplicado com o navegador pelo mesmo `event_id`.
+
+> **Ordem de impacto:** `_fbc` (clique no anúncio) > `em` (email) > `_fbp` > IP +
+> User-Agent > `external_id`. A captura de email destrava o `em` para o funil
+> inteiro; o resto já entra automaticamente.
+
+> **Sem backend?** Sem `VITE_API_BASE`, o Advanced Matching do pixel continua
+> funcionando (o `em` entra em todos os eventos do navegador); só o espelho
+> server-side vira no-op seguro. Configure `VITE_API_BASE` + o `META_CAPI_TOKEN`
+> no backend para ganhar IP/UA/`_fbp`/`_fbc` server-side.
 
 **Por que uma camada única?** Assim os nomes e parâmetros dos eventos ficam
 consistentes em todo o código, nada dispara se o pixel estiver bloqueado/ausente

@@ -27,7 +27,9 @@ import {
   trackInitiateSubscription,
   trackSubscriptionPurchase,
   trackSimulatedSubscribe,
+  applyAdvancedMatching,
 } from "../../lib/pixel.js";
+import { attachCheckoutMatch } from "../../lib/capi-client.js";
 
 // Where to send people who back out, based on what they tried to unlock.
 const backFor = (kind) => (kind === "course" ? "/app/path" : "/app/stories");
@@ -213,6 +215,14 @@ export default function Paywall() {
     const pending = readPendingCheckout();
     const planId = pending?.planId || selected;
     const returnTo = pending?.returnTo || ctx.from || "/app";
+
+    // Correspondência (EMQ): garante o Advanced Matching no navegador e ANEXA
+    // email + _fbp + _fbc + external_id (e o IP/UA reais desta request) a esta
+    // preapproval no backend. Assim, quando o webhook confirmar o pagamento, o
+    // Purchase server-side sai com correspondência forte — o webhook, sozinho,
+    // não enxerga os cookies nem o IP do usuário.
+    applyAdvancedMatching();
+    if (ret.preapprovalId) attachCheckoutMatch(ret.preapprovalId);
 
     // Confirma o pagamento e SÓ ENTÃO libera + dispara o Purchase.
     const confirmPaid = () => {

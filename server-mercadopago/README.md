@@ -31,6 +31,37 @@ await app.register(mercadopagoConversions);
 
 Requer Node 18+ (usa `fetch` e `crypto.subtle` globais).
 
+## Qualidade da Correspondência de Eventos (EMQ)
+
+A EMQ estava em **3/10** porque o `user_data` ia fraco: só email do MP +
+external_id. Faltavam os sinais de maior peso. Agora **todo evento server-side**
+sai com o que o Meta usa para casar a conversão com um usuário real:
+
+- **`em`** (email, SHA-256), **`fn`/`ln`/`ph`** quando houver;
+- **`fbc`** (o clique no anúncio — o de maior peso) e **`fbp`** (id de navegador);
+- **`client_ip_address`** e **`client_user_agent`** (IP/UA reais do usuário);
+- **`external_id`** estável do visitante.
+
+Duas rotas novas alimentam isso:
+
+| Rota | Papel |
+| --- | --- |
+| `POST /api/lead` | Espelha o `Lead` do pixel na CAPI com IP + UA + email + `_fbp`/`_fbc`. Deduplica pelo mesmo `event_id`. |
+| `POST /api/checkout/attach` | Guarda os dados de correspondência do visitante por `preapproval_id`. O webhook (que não vê cookies/IP do usuário) usa isso para o `Purchase` sair forte. |
+
+O front chama essas rotas por `VITE_API_BASE`. Sem `META_CAPI_TOKEN` elas viram
+no-op seguro.
+
+> ⚠️ **CORS:** `/api/lead` e `/api/checkout/attach` são chamadas do site (outra
+> origem). Garanta `@fastify/cors` permitindo `POST` + `Content-Type: application/json`
+> para a origem do site — é o mesmo CORS que já faz o `GET` de status funcionar.
+
+> ⚠️ **Armazenamento em memória:** o `attach` guarda a correspondência num `Map`
+> em memória (TTL 24h). Reinicia no deploy e não é compartilhado entre várias
+> instâncias. Para 1 instância no Render está ótimo; com várias, troque por
+> Redis/DB. Mesmo sem isso, a cópia do `Purchase` no **navegador** já sai com o
+> Advanced Matching, então a compra não fica sem correspondência.
+
 ## Variáveis de ambiente
 
 | Var | Para que serve |

@@ -8,7 +8,7 @@ import Avatar from "../components/app/Avatar.jsx";
 import { LEVELS } from "../data.app.js";
 import { useAuth } from "../auth/AuthContext.jsx";
 import { spring, EASE } from "../motion.js";
-import { trackLead, trackCompleteRegistration } from "../lib/pixel.js";
+import { identify, trackLead, trackCompleteRegistration } from "../lib/pixel.js";
 
 export default function Signup() {
   const { signup } = useAuth();
@@ -36,6 +36,14 @@ export default function Signup() {
       return;
     }
     setErr("");
+    // Identifica ANTES do Lead: aplica o Advanced Matching, então o Lead (e todo
+    // evento seguinte) já sai com o email hasheado → EMQ mais alta.
+    const [firstName, ...rest] = account.name.trim().split(/\s+/);
+    identify({
+      email: account.email,
+      firstName,
+      lastName: rest.join(" "),
+    });
     trackLead({ content_name: "signup", step: "account" });
     setStep(1);
   };

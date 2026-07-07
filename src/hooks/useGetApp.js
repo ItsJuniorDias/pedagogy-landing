@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { resolveAppTarget } from '../device.js'
 import { trackDownloadClick } from '../lib/pixel.js'
+import { useAppGate } from '../components/EmailGate.jsx'
 
 /**
  * Props for any "get the app" CTA — spread the result onto an
@@ -10,33 +10,40 @@ import { trackDownloadClick } from '../lib/pixel.js'
  *   const app = useGetApp()
  *   <motion.a {...app} className="btn3d b-pink">Download free</motion.a>
  *
- * • iOS / desktop → opens the App Store (in a new tab, so the site stays open)
- * • Android       → routes to /login as a fast in-app (SPA) transition
+ * • iOS / desktop → App Store (nova aba, mantém a landing aberta)
+ * • Android       → rota /login (transição SPA rápida, app web)
  *
- * `href` is always set to the resolved destination, so right-click,
- * middle-click and "open in new tab" all behave correctly.
+ * O clique passa pelo EMAIL GATE (components/EmailGate.jsx): se ainda não temos
+ * o email do visitante, abrimos um modal pedindo-o (uma única vez) ANTES de
+ * seguir pro destino — é isto que alimenta o Advanced Matching e faz a EMQ
+ * subir. Com o email já conhecido, o gate é pulado e o destino abre na hora.
+ *
+ * `href` continua apontando pro destino, então clique com botão do meio /
+ * "abrir em nova aba" seguem funcionando normalmente.
  */
 export function useGetApp({ placement, cta, plan } = {}) {
-  const navigate = useNavigate()
   const target = resolveAppTarget()
+  const { requestApp } = useAppGate()
 
   const onClick = useCallback(
     (e) => {
-      // Track the download intent before we navigate. Fires for both the App
-      // Store (external) and the web-app fallback so no click is lost.
+      // Interceptamos SEMPRE: mesmo no link externo, precisamos passar pelo gate
+      // antes de abrir a App Store.
+      e.preventDefault()
+
+      // Registra a intenção de download antes de navegar. Dispara tanto pra App
+      // Store quanto pro fallback web, então nenhum clique se perde.
       trackDownloadClick({
         placement,
         cta,
         plan,
         destination: target.external ? 'app_store' : 'web_app',
       })
-      // External (App Store): let the browser follow the href normally.
-      if (target.external) return
-      // Internal route: keep it a client-side navigation, no full reload.
-      e.preventDefault()
-      navigate(target.to)
+
+      // Abre o gate (ou vai direto, se já soubermos o email).
+      requestApp({ placement, cta, plan, target })
     },
-    [navigate, target.external, target.to, placement, cta, plan],
+    [target.external, target.to, placement, cta, plan, requestApp],
   )
 
   return {

@@ -27,6 +27,9 @@
 //   navegador + servidor automaticamente.
 // -----------------------------------------------------------------------------
 
+import { getPixelMatchKeys, saveIdentity } from './identity.js'
+import { reportLead } from './capi-client.js'
+
 const isBrowser = typeof window !== 'undefined'
 
 // import.meta.env só existe no build Vite; protegido para nunca quebrar caso
@@ -75,6 +78,52 @@ function clean(obj) {
   }
   return out
 }
+
+// =============================================================================
+// ADVANCED MATCHING — o que faz a Qualidade da Correspondência de Eventos (EMQ)
+// sair de 3/10. Reinicia o pixel passando os dados do visitante (email, nome,
+// telefone, external_id). O fbq NORMALIZA e faz o HASH sozinho e passa a anexar
+// esses dados em TODOS os eventos seguintes. Reinit NÃO redispara PageView.
+// =============================================================================
+
+let lastAmSig = '' // evita reinit redundante com os mesmos dados
+
+// Loga só quais chaves foram setadas — nunca o valor (não vaza PII no console).
+function maskKeys(keys) {
+  return Object.keys(keys).reduce((o, k) => ((o[k] = 'set'), o), {})
+}
+
+/** Aplica no pixel os dados de correspondência já conhecidos do visitante. */
+export function applyAdvancedMatching() {
+  if (!fbqReady()) return
+  const keys = getPixelMatchKeys() // { em?, fn?, ln?, ph?, external_id }
+  const sig = JSON.stringify(keys)
+  if (sig === lastAmSig) return // nada mudou desde a última vez
+  lastAmSig = sig
+  logEvent('init', 'AdvancedMatching', maskKeys(keys))
+  try {
+    window.fbq('init', PIXEL_ID, keys)
+  } catch {
+    /* analytics nunca pode quebrar o app */
+  }
+}
+
+/**
+ * "Agora sabemos quem é este visitante." Salva a identidade (email/nome/telefone)
+ * e aplica o Advanced Matching, de forma que os próximos eventos do pixel já
+ * saiam com email. Chame no cadastro, no login e na captura de email.
+ */
+export function identify(partial = {}) {
+  saveIdentity(partial)
+  applyAdvancedMatching()
+}
+
+/**
+ * Chame UMA vez no boot do app. Aplica o Advanced Matching com o que já estiver
+ * guardado (external_id sempre; email/nome se o visitante já se identificou numa
+ * visita anterior) — assim usuários recorrentes já são casados desde o começo.
+ */
+export const bootIdentity = () => applyAdvancedMatching()
 
 /** Dispara um evento PADRÃO do Meta (com eventID automático p/ dedupe CAPI). */
 export function track(name, params = {}, { eventID } = {}) {
@@ -159,9 +208,20 @@ export const trackScrollDepth = (depth) => trackCustom('ScrollDepth', { depth })
 
 // ---- Cadastro / autenticação -----------------------------------------------
 
-/** Intenção real no cadastro (etapa de conta válida) → Lead (padrão). */
-export const trackLead = ({ content_name = 'signup', step } = {}) =>
-  track('Lead', { content_name, step })
+/**
+ * Intenção real (etapa de conta válida / email capturado) → Lead (padrão).
+ *
+ * Dispara no navegador E espelha no servidor (CAPI) com o MESMO eventID, então
+ * o Meta deduplica as duas cópias. A cópia do servidor leva IP + User-Agent +
+ * _fbp + _fbc + email hasheado — é ela que puxa a EMQ deste evento pra cima.
+ * Só tem efeito de servidor se o visitante já foi identificado (identify) e se
+ * VITE_API_BASE estiver configurado; caso contrário, o mirror é no-op seguro.
+ */
+export const trackLead = ({ content_name = 'signup', step } = {}) => {
+  const eventID = track('Lead', { content_name, step })
+  reportLead({ eventId: eventID, custom: { content_name, step } })
+  return eventID
+}
 
 /** Conta criada → CompleteRegistration (padrão). */
 export const trackCompleteRegistration = ({ method = 'email' } = {}) =>

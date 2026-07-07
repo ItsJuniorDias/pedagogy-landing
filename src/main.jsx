@@ -4,7 +4,14 @@ import { BrowserRouter } from 'react-router-dom'
 import { MotionConfig } from 'framer-motion'
 import App from './App.jsx'
 import { AuthProvider } from './auth/AuthContext.jsx'
+import { EmailGateProvider } from './components/EmailGate.jsx'
+import { bootIdentity } from './lib/pixel.js'
 import './index.css'
+
+// Aplica o Advanced Matching logo no boot: garante o external_id estável em
+// todo evento e, para visitantes recorrentes que já se identificaram, reanexa
+// o email — assim eles já são casados desde o primeiro evento desta visita.
+bootIdentity()
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -13,7 +20,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <MotionConfig reducedMotion="user">
       <BrowserRouter>
         <AuthProvider>
-          <App />
+          <EmailGateProvider>
+            <App />
+          </EmailGateProvider>
         </AuthProvider>
       </BrowserRouter>
     </MotionConfig>
