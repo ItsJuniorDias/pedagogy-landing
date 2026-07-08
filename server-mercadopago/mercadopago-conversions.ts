@@ -54,9 +54,7 @@ import type { FastifyPluginAsync, FastifyRequest } from "fastify";
 
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN || "";
 const META_PIXEL_ID = process.env.META_PIXEL_ID || "967920369353096";
-const META_CAPI_TOKEN =
-  process.env.META_CAPI_TOKEN ||
-  "EAAoGZA4t0d9oBRxjtrnjnnWgWZCycoirlTNZAKKwHujeNeE7JKn6G7WLqhsewO6GiXqQh7d8Q5XalOgcQlEN5zcnknI0GVv4tamikWhTZAgttDTiwy0uMyZCl3DFt9zivZAKWyHWiZCfKBqSVPkOr1XlROmgTuOK0lYkCzYqjoSNYwZBzNCOSZCVyFfyANS0dXLscwAZDZD";
+const META_CAPI_TOKEN = process.env.META_CAPI_TOKEN || "";
 const META_TEST_EVENT_CODE = process.env.META_TEST_EVENT_CODE || "";
 const PUBLIC_APP_URL = process.env.PUBLIC_APP_URL || "https://pedagogy.com.br";
 
