@@ -36,18 +36,43 @@ const API_BASE = (ENV.VITE_API_BASE || "").replace(/\/+$/, "");
 const CHECKOUT_BASE = "https://www.mercadopago.com.br/subscriptions/checkout";
 
 // Plan ids do painel do Mercado Pago.
+//
+// ⚠️  `amountBRL` é a FONTE ÚNICA da verdade do preço: alimenta tanto o valor
+//     EXIBIDO na landing/paywall quanto o `value` enviado ao Meta (InitiateCheckout
+//     / Purchase). Ele PRECISA ser igual ao valor configurado para este plano no
+//     painel do Mercado Pago (Ferramentas de vendas → Planos de assinatura). Se não
+//     bater, o usuário vê um preço diferente do que é cobrado E o Meta otimiza por
+//     um valor errado. O MP cobra em BRL (mercadopago.com.br), então é sempre BRL.
 export const MP_PLANS = {
   monthly: {
     id: "monthly",
     cycle: "monthly",
     preapprovalPlanId: "af9ff462253545b49e6dfbc34d3f3a7a",
+    amountBRL: 59.9, // ⚠️ AJUSTE para o valor real do plano mensal no painel do MP
   },
   annual: {
     id: "annual",
     cycle: "annual",
     preapprovalPlanId: "af56e93c58e74f4685ab990252d3e04d",
+    amountBRL: 399.9, // ⚠️ AJUSTE para o valor real do plano anual no painel do MP
   },
 };
+
+/** Formata um número como moeda BRL no padrão pt-BR (ex.: 239.9 → "R$ 239,90"). */
+export const formatBRL = (n) =>
+  typeof n === "number" && Number.isFinite(n)
+    ? n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+    : "";
+
+/**
+ * { value, currency } de um plano, direto do número (não de string de exibição).
+ * Use isto para o `value`/`currency` de InitiateCheckout e Purchase — assim o
+ * valor rastreado no Meta é sempre o mesmo que é cobrado no MP.
+ */
+export const planPricing = (planId) => ({
+  value: MP_PLANS[planId]?.amountBRL,
+  currency: "BRL",
+});
 
 /** True quando o plano tem um preapproval_plan_id real configurado. */
 export const isCheckoutConfigured = (planId) =>

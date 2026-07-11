@@ -3,6 +3,9 @@
 // social-proof numbers without touching the components.
 // -----------------------------------------------------------------------------
 
+// Preço vem de UMA fonte só (o valor do plano no MP). Ver payments/mercadopago.js.
+import { MP_PLANS, formatBRL } from "./payments/mercadopago.js";
+
 // Honest, verifiable product facts — no invented user counts or ratings.
 // (A brand-new app has no real "50k users / 4.9★" to show yet; claiming them on
 //  paid traffic erodes trust and risks App Store / ad-policy issues. These four
@@ -147,9 +150,17 @@ export const FAQ = [
   ],
 ];
 
+// Preços em BRL, derivados de MP_PLANS.amountBRL — o mesmo número cobrado no
+// Mercado Pago e enviado ao Meta. Mude o valor UMA vez lá e tudo aqui acompanha.
+const _mAmount = MP_PLANS.monthly.amountBRL;
+const _aAmount = MP_PLANS.annual.amountBRL;
+const _aMonthly = _aAmount / 12;
+const _savingPct = Math.max(0, Math.round((1 - _aAmount / (_mAmount * 12)) * 100));
+const _monthsFree = Math.round((_mAmount * 12 - _aAmount) / _mAmount);
+
 export const PRICING = {
   monthly: {
-    price: "$9.99",
+    price: formatBRL(_mAmount),
     note: "Flexible — cancel anytime.",
     features: [
       "50+ interactive stories",
@@ -159,16 +170,16 @@ export const PRICING = {
     ],
   },
   annual: {
-    price: "$79.99",
-    subnote: "Just $6.67/mo · Save 33%",
+    price: formatBRL(_aAmount),
+    subnote: `Just ${formatBRL(_aMonthly)}/mo · Save ${_savingPct}%`,
     features: [
       "Everything in Monthly",
-      "Save 33% vs paying monthly",
+      `Save ${_savingPct}% vs paying monthly`,
       "Offline reading anywhere",
       "Priority new releases",
     ],
-    // Honest, concrete reframe of the 33% saving (no invented "first 100" scarcity).
-    promo: "💛 That’s like getting 4 months free vs paying monthly",
+    // Honest, concrete reframe of the saving (no invented "first 100" scarcity).
+    promo: `💛 That’s like getting ${_monthsFree} months free vs paying monthly`,
   },
 };
 

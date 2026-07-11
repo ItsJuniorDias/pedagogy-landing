@@ -2,15 +2,16 @@ import { motion } from 'framer-motion'
 import { Reveal, Stagger, RevealItem, Check } from './ui.jsx'
 import { fadeUp, popIn, spring, viewport as vp } from '../motion.js'
 import { PRICING } from '../data.js'
-import { useGetApp } from '../hooks/useGetApp.js'
+import { useSubscribe } from '../hooks/useSubscribe.js'
 import { trackViewPricing } from '../lib/pixel.js'
 import { useOnceVisible } from '../lib/pixel-hooks.js'
 
 export default function Pricing() {
   const { monthly, annual } = PRICING
-  // Two calls so each button reports its own plan/cta in the DownloadClick event.
-  const appMonthly = useGetApp({ placement: 'pricing', cta: 'start_monthly', plan: 'monthly' })
-  const appAnnual = useGetApp({ placement: 'pricing', cta: 'start_annual', plan: 'annual' })
+  // Subscription CTAs → straight to /premium (web) or the App Store (iOS). Each
+  // button reports its own plan/cta in the DownloadClick (upper-funnel intent).
+  const subMonthly = useSubscribe({ placement: 'pricing', cta: 'start_monthly', plan: 'monthly' })
+  const subAnnual = useSubscribe({ placement: 'pricing', cta: 'start_annual', plan: 'annual' })
   // Fire ViewContent once when the pricing section scrolls into view.
   const sectionRef = useOnceVisible(trackViewPricing, { threshold: 0.3 })
   return (
@@ -49,7 +50,7 @@ export default function Pricing() {
                 ))}
               </ul>
               <motion.a
-                {...appMonthly}
+                {...subMonthly}
                 className="btn3d b-white w-full px-6 py-3.5 mt-7 ring-1 ring-grape/15"
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
@@ -101,7 +102,7 @@ export default function Pricing() {
                 {annual.promo}
               </motion.div>
               <motion.a
-                {...appAnnual}
+                {...subAnnual}
                 className="btn3d b-sun w-full px-6 py-3.5 mt-4"
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}

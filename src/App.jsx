@@ -4,6 +4,7 @@ import { usePageViews } from './lib/pixel-hooks.js'
 import Landing from './pages/Landing.jsx'
 import Login from './pages/Login.jsx'
 import Signup from './pages/Signup.jsx'
+import Premium from './pages/Premium.jsx'
 import RequireAuth from './auth/RequireAuth.jsx'
 import AppLayout from './components/app/AppLayout.jsx'
 import Home from './pages/app/Home.jsx'
@@ -45,6 +46,8 @@ export default function App() {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      {/* Public, checkout-first paywall — the short paid funnel + MP return handler. */}
+      <Route path="/premium" element={<Premium />} />
 
       {/* logged-in app */}
       <Route

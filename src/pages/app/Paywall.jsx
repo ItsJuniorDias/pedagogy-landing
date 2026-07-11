@@ -19,9 +19,9 @@ import {
   readPendingCheckout,
   clearPendingCheckout,
   fetchSubscriptionStatus,
+  planPricing,
 } from "../../payments/mercadopago.js";
 import {
-  parsePrice,
   trackViewPaywall,
   trackSelectPlan,
   trackInitiateSubscription,
@@ -173,8 +173,9 @@ export default function Paywall() {
     [],
   );
 
-  // { value, currency } for a plan id, parsed from its display price.
-  const priceOf = (id) => parsePrice(plans[id]?.price);
+  // { value, currency } for a plan id — straight from the numeric source of
+  // truth (MP_PLANS.amountBRL), so the tracked value always matches the charge.
+  const priceOf = (id) => planPricing(id);
 
   // Fire ViewContent once when the paywall is actually shown (not on redirect).
   useEffect(() => {
@@ -309,8 +310,9 @@ export default function Paywall() {
 
   const goBack = ctx.from && ctx.kind ? backFor(ctx.kind) : "/app";
 
-  // Redirect to Mercado Pago's hosted checkout for the selected plan. Plans
-  // without a preapproval_plan_id yet (e.g. annual) report "coming soon".
+  // Redirect to Mercado Pago's hosted checkout for the selected plan. Both plans
+  // carry a preapproval_plan_id; isCheckoutConfigured guards against any that
+  // don't (which report "coming soon" instead of a dead redirect).
   const handleSubscribe = async () => {
     setNotice(null);
     if (!isCheckoutConfigured(selected)) {

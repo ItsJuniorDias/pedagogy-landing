@@ -1,19 +1,22 @@
-// Centralised "where does 'get the app' go?" logic.
+// Centralised "where does a CTA go?" logic.
 //
-// Product rule (from the team):
-//   • iOS device      → App Store listing (the native app lives there)
-//   • Android device  → /login  (no native Android app yet → use the web app)
-//   • desktop / other → App Store listing (default)
+// Product rule (revised for the web-subscription funnel):
+//   • iOS device      → App Store listing (native app + StoreKit in-app purchase)
+//   • Android device  → web app (no native Android app → use the browser)
+//   • desktop / other → web app  ← CHANGED: was App Store. Desktop ad clicks can
+//                        never reach the Mercado Pago checkout on the App Store,
+//                        so they must land on the web app instead.
 //
-// Everything funnels through resolveAppTarget(), so changing this behaviour
-// later means editing one function — not every button on the page.
+// Everything funnels through resolveAppTarget() / resolveSubscribeTarget(), so
+// changing this behaviour later means editing one place — not every button.
 
 /** The published Pedagogy iOS app. */
 export const APP_STORE_URL =
   'https://apps.apple.com/us/app/pedagogy-kids-books/id6776011454'
 
-/** Where non-iOS-app visitors (Android today) are sent instead. */
-export const FALLBACK_ROUTE = '/login'
+/** Free web-app entry for non-iOS visitors. Cold ad traffic converts better on
+ *  /signup than on /login (a login page for an account they don't have yet). */
+export const FALLBACK_ROUTE = '/signup'
 
 /**
  * Best-effort detection of the visitor's mobile OS.
@@ -42,16 +45,31 @@ export const isAndroid = () => getMobileOS() === 'android'
 export const isIOS = () => getMobileOS() === 'ios'
 
 /**
- * Resolve the destination for any "get the app" CTA.
+ * Destination for a generic "get the app" (FREE) CTA — hero, badges, sticky bar.
  *
  * @returns {{ external: boolean, to: string }}
- *   external === true  → `to` is a full URL (open it directly)
+ *   external === true  → `to` is a full URL (open it directly, new tab)
  *   external === false → `to` is an in-app route (use the router)
  *
- * To send desktop visitors into the web app instead of the App Store,
- * change the final `return` to: `{ external: false, to: FALLBACK_ROUTE }`.
+ * iOS → App Store. Everyone else (Android AND desktop) → the web app.
  */
 export function resolveAppTarget() {
-  if (isAndroid()) return { external: false, to: FALLBACK_ROUTE }
-  return { external: true, to: APP_STORE_URL }
+  if (isIOS()) return { external: true, to: APP_STORE_URL }
+  return { external: false, to: FALLBACK_ROUTE }
+}
+
+/**
+ * Destination for a SUBSCRIPTION CTA (the pricing cards). This is the paid path,
+ * so it must reach the checkout as directly as possible:
+ *   • iOS → App Store (subscriptions happen via native in-app purchase there)
+ *   • Android / desktop → /premium?plan=… (the public web paywall → Mercado Pago)
+ *
+ * Sending paid intent straight to /premium is what collapses the old
+ * download → login → signup → browse → locked-item → paywall funnel into a
+ * single step, so InitiateCheckout finally gets enough volume to optimise on.
+ */
+export function resolveSubscribeTarget(planId = 'annual') {
+  if (isIOS()) return { external: true, to: APP_STORE_URL }
+  const plan = planId === 'monthly' ? 'monthly' : 'annual'
+  return { external: false, to: `/premium?plan=${plan}` }
 }
